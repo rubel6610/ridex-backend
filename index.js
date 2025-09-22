@@ -19,7 +19,7 @@ const client = new MongoClient(uri, {
   },
 });
 
-// ✅ async function for DB connection
+
 async function run() {
   try {
     await client.connect();
@@ -33,7 +33,7 @@ async function run() {
       res.send(result);
     });
 
-    // READ (GET) - Get all users
+   
     app.get("/users", async (req, res) => {
       const users = await usersCollection.find().toArray();
       res.send(users);
