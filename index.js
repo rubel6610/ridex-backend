@@ -1,13 +1,19 @@
+// index.js
 const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 require('dotenv').config({ quiet: true });
+
 const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes'); // ✅ নতুন authRoutes import করো
 
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3001',
+  credentials: true, 
+}));
 app.use(express.json());
 
 // Default route
@@ -15,9 +21,9 @@ app.get("/", (req, res) => {
   res.send('🚀 Server is running...');
 });
 
-// ROUTES:
-// User routes:
-app.use('/api', userRoutes);
+// ROUTES
+app.use('/api', userRoutes);   
+app.use('/api/auth', authRoutes); 
 
 // Start server
 const PORT = process.env.PORT || 5000;
