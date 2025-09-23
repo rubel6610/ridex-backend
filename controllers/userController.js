@@ -40,6 +40,33 @@ const getSingleUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// update user
+const updateUser = async (req, res) => {
+  try {
+    const { email } = req.params;   
+    const updatedData = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const usersCollection = getCollection("users");
+
+    const result = await usersCollection.updateOne(
+      { email },             
+      { $set: updatedData }   
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User updated successfully" });
+  } catch (error) {
+    console.error("❌ Error updating user:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 
