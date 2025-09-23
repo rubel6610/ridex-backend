@@ -15,7 +15,7 @@ const registerUser = async (req, res) => {
     const { NIDno, dateOfBirth, email, password, photoUrl } = req.body;
 
     // 1. NID validation from dummy DB
-    const nidData = await nidCollection.findOne({ NIDno,email,dateOfBirth});
+    const nidData = await nidCollection.findOne({ NIDno, email, dateOfBirth });
     if (!nidData) {
       return res.status(404).json({ message: "NID not found or invalid" });
     }
@@ -36,6 +36,9 @@ const registerUser = async (req, res) => {
       role: "user",
       isVerified: "pending", 
       photoUrl: photoUrl,
+      failedAttempts: 0,
+      isLocked: false,
+      lastFailedAt: null,
       createdAt: new Date(),
     };
 
@@ -52,7 +55,7 @@ const registerUser = async (req, res) => {
 };
 
 // ==========================
-// Login Controller
+// Login Controller with failed attempts
 // ==========================
 const loginUser = async (req, res) => {
   const db = getDb();
@@ -67,13 +70,50 @@ const loginUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 2. Compare password
+    // 2. Check if account is locked
+    if (user.isLocked) {
+      // Optional: auto-unlock after 30 min
+      const lockDuration = 30 * 60 * 1000; // 30 minutes
+      if (user.lastFailedAt && (Date.now() - user.lastFailedAt.getTime()) > lockDuration) {
+        await usersCollection.updateOne(
+          { email },
+          { $set: { isLocked: false, failedAttempts: 0 } }
+        );
+        user.isLocked = false;
+        user.failedAttempts = 0;
+      } else {
+        return res.status(403).json({
+          message: "Account locked due to multiple failed login attempts. Try later."
+        });
+      }
+    }
+
+    // 3. Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      const failedAttempts = (user.failedAttempts || 0) + 1;
+      const isLocked = failedAttempts >= 5; // lock after 5 fails
+
+      await usersCollection.updateOne(
+        { email },
+        { 
+          $set: { isLocked, lastFailedAt: new Date() },
+          $inc: { failedAttempts: 1 }
+        }
+      );
+
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 3. Issue JWT
+    // 4. Reset failed attempts on success
+    if (user.failedAttempts > 0 || user.isLocked) {
+      await usersCollection.updateOne(
+        { email },
+        { $set: { failedAttempts: 0, isLocked: false } }
+      );
+    }
+
+    // 5. Issue JWT
     const token = jwt.sign(
       { id: user._id, nid: user.nid, email: user.email, role: user.role },
       process.env.JWT_SECRET,
