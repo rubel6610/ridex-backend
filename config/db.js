@@ -8,7 +8,7 @@ async function connectDB(uri) {
 
   const client = new MongoClient(uri);
   await client.connect();
-  db = client.db(process.env.DB_USER);
+  db = client.db(process.env.DB_USER); // ⚠️ এখানে DB_USER না, আসল Database নাম দাও
   console.log('✅ MongoDB connected...');
   return db;
 }
