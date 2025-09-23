@@ -5,6 +5,6 @@ const router = express.Router();
 router.get("/users", getAllUsers);
 router.get("/user", getSingleUser);
 router.patch("/user/:email", updateUser);
-
+router.delete("/user/:email", deleteUser);
 
 module.exports = router;

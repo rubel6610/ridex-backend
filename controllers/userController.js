@@ -68,6 +68,29 @@ const updateUser = async (req, res) => {
   }
 };
 
+// DELETE: Delete user 
+const deleteUser = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const usersCollection = getCollection("users");
+
+    const result = await usersCollection.deleteOne({ email });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error deleting user:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 module.exports = { getAllUsers, getSingleUser,updateUser,deleteUser };
