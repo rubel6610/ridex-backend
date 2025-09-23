@@ -1,0 +1,31 @@
+{
+  "firstName": "Sifayed",
+  "lastName": "Islam",
+  "gender": "male",
+  "PhotoUrl": "https://i.ibb.co/0j1LZ5H/Whats-App-Image-2023-07-14-at-12-26-23-PM.jpg",
+  "fatherName": "Abdul Kadir",
+  "motherName": "Fatima Begum",
+  "dateOfBirth": "2007-05-20",
+  "NIDno": "19901234567890123",
+  "phoneNumber": "+8801712345678",
+  "bloodGroup": "A+",
+  "isVerified": "pending",
+  "role": "user",
+  "email": "sifad99@email.com",
+  "password": "hashed_password",
+  "failedAttempts": 0,
+  "accountLockedUntil": null,
+  "createdAt": "ksdjfjdksfjksjkjfk",
+  "permanent_address": {
+    "village": "Geraldtown",
+    "post": "haven",
+    "upazila": "Double Mooring",
+    "district": "Chattogram"
+  },
+  "present_address": {
+    "village": "New Andrewville",
+    "post": "Berg",
+    "upazila": "Motihar",
+    "district": "Rajshahi"
+  }
+}
