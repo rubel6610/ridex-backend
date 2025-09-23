@@ -5,7 +5,7 @@ const { connectDB } = require('./config/db');
 require('dotenv').config({ quiet: true });
 
 const userRoutes = require('./routes/userRoutes');
-const authRoutes = require('./routes/authRoutes'); // ✅ নতুন authRoutes import করো
+const authRoutes = require('./routes/authRoutes'); 
 
 const app = express();
 
