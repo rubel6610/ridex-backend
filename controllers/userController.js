@@ -41,8 +41,6 @@ const getSingleUser = async (req, res) => {
   }
 };
 
-
-
 // update user
 const updateUser = async (req, res) => {
   try {
