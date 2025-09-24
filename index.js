@@ -1,17 +1,39 @@
+// index.js
 const express = require('express');
-require("dotenv").config();
 const cors = require('cors');
-const port = process.env.PORT || 5000;
+const { connectDB } = require('./config/db');
+require('dotenv').config({ quiet: true });
+
+const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes'); 
+
 const app = express();
 
+// Middlewares
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true, 
+}));
+app.use(express.json());
 
-app.use(express.json())
-app.use(cors())
+// Default route
+app.get("/", (req, res) => {
+  res.send('🚀 Server is running...');
+});
 
-app.get("/", (req,res)=>{
-    console.log("server is running");
-})
+// ROUTES
+app.use('/api', userRoutes);   
+app.use('/api/auth', authRoutes); 
 
-app.listen(port,()=>{
-    console.log("server running on", port);
-})
+// Start server
+const PORT = process.env.PORT || 5000;
+
+(async () => {
+  try {
+    await connectDB(process.env.MONGO_URI);
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  } catch (err) {
+    console.error('❌ Failed to connect DB:', err);
+    process.exit(1);
+  }
+})();
