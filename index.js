@@ -11,7 +11,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000','http://localhost:3001','https://ridex-fronted.netlify.app'],
+  origin: ['http://localhost:3000','http://localhost:3001','http://localhost:3001','https://ridex-fronted.netlify.app'],
   credentials: true, 
 }));
 app.use(express.json());
