@@ -1,5 +1,17 @@
 const { getCollection } = require('../utils/getCollection');
 
+// GET: Get all riders
+const getRiders = async (req, res) => {
+  try {
+    const ridersCollection = getCollection('riders');
+    const riders = await ridersCollection.find().toArray();
+    res.status(200).json({ riders });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // POST: Simple rider insert (no checks)
 const addRiderDirectly = async (req, res) => {
   try {
@@ -21,4 +33,4 @@ const addRiderDirectly = async (req, res) => {
   }
 };
 
-module.exports = { addRiderDirectly };
+module.exports = { getRiders, addRiderDirectly };
