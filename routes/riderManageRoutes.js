@@ -5,7 +5,7 @@ const {
   rejectRider,
 } = require('../controllers/ridersManageController');
 
-router.post('/approve-rider', approveRider);
-router.get('/reject-rider', rejectRider);
+router.post('/approve-rider/:id', approveRider);
+router.post('/reject-rider/:id', rejectRider);
 
 module.exports = router;

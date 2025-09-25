@@ -7,15 +7,15 @@ const approveRider = async (req, res) => {
     const ridersCollection = getCollection('riders');
     const usersCollection = getCollection('users');
 
-    const { riderId } = req.params; 
+    const { id } = req.params; 
 
-    if (!riderId) {
+    if (!id) {
       return res.status(400).json({ message: 'Rider ID is required' });
     }
 
     // find rider request
     const rider = await ridersCollection.findOne({
-      _id: new ObjectId(riderId),
+      _id: new ObjectId(id),
     });
     if (!rider) {
       return res.status(404).json({ message: 'Rider not found' });
@@ -23,13 +23,13 @@ const approveRider = async (req, res) => {
 
     // update rider status to approved
     await ridersCollection.updateOne(
-      { _id: new ObjectId(riderId) },
+      { _id: new ObjectId(id) },
       { $set: { status: 'approved', approvedAt: new Date() } }
     );
 
     // update user role to rider
     await usersCollection.updateOne(
-      { _id: rider.userId },
+      { _id: rider.id },
       { $set: { role: 'rider' } }
     );
 
@@ -46,15 +46,15 @@ const rejectRider = async (req, res) => {
     const ridersCollection = getCollection('riders');
     const usersCollection = getCollection('users');
 
-    const { riderId } = req.params; 
+    const { id } = req.params; 
 
-    if (!riderId) {
+    if (!id) {
       return res.status(400).json({ message: 'Rider ID is required' });
     }
 
     // find rider request
     const rider = await ridersCollection.findOne({
-      _id: new ObjectId(riderId),
+      _id: new ObjectId(id),
     });
     if (!rider) {
       return res.status(404).json({ message: 'Rider not found' });
@@ -62,13 +62,13 @@ const rejectRider = async (req, res) => {
 
     // update rider status to rejected
     await ridersCollection.updateOne(
-      { _id: new ObjectId(riderId) },
+      { _id: new ObjectId(id) },
       { $set: { status: 'rejected', rejectedAt: new Date() } }
     );
 
     // update user role back to user
     await usersCollection.updateOne(
-      { _id: rider.userId },
+      { _id: rider.id },
       { $set: { role: 'user' } }
     );
 

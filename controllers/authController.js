@@ -79,9 +79,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser };
-
-
 // POST: Login Controller with failed attempts
 const loginUser = async (req, res) => {
   const usersCollection = getCollection('users');
