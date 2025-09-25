@@ -2,7 +2,11 @@ const { ObjectId } = require('mongodb');
 const { getCollection } = require('../utils/getCollection');
 
 
-// POST: Become a rider with checks
+const bcrypt = require('bcrypt');
+const { ObjectId } = require('mongodb');
+const { getCollection } = require('../utils/getCollection');
+
+// POST: Become a rider with password validation
 const becomeRider = async (req, res) => {
   try {
     const ridersCollection = getCollection('riders');
@@ -10,6 +14,7 @@ const becomeRider = async (req, res) => {
 
     const {
       userId,
+      password,
       present_address,
       vehicleType,
       vehicleModel,
@@ -21,21 +26,35 @@ const becomeRider = async (req, res) => {
     const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // already rider check
-    if (user.role === 'rider') {
-      return res.status(400).json({ message: 'You are already a rider' });
-    }
-
-    // already pending check
+    // check if already pending
     const existingRider = await ridersCollection.findOne({
       userId: new ObjectId(userId),
     });
 
-    if (existingRider && existingRider.status === 'pending') {
+    // check if user already rider
+    if (user.role === 'rider' && existingRider.status === 'approved') {
+      return res.status(400).json({ message: 'You are already a rider' });
+    }
+
+    // check if user already requested to be a rider
+    if (
+      existingRider &&
+      existingRider.status === 'pending' &&
+      user.role === 'user'
+    ) {
       return res
         .status(400)
         .json({ message: 'Your rider request is already under review' });
     }
+
+    // validate password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    // hash password again for riders collection
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // create rider profile
     const riderData = {
@@ -49,6 +68,7 @@ const becomeRider = async (req, res) => {
       vehicleModel,
       vehicleRegisterNumber,
       drivingLicense,
+      password: hashedPassword,
       status: 'pending',
       createdAt: new Date(),
     };
@@ -63,9 +83,7 @@ const becomeRider = async (req, res) => {
       );
     }
 
-    res
-      .status(201)
-      .json({ message: 'Rider request submitted'});
+    res.status(201).json({ message: 'Rider request submitted' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
