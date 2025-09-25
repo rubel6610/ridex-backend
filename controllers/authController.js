@@ -69,6 +69,9 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    if(user.isVerified === "pending"){
+      return res.status(404).json({ message: "Account is under reviewed by admin" });
+    }
 
     // 2. Check if account is locked
     if (user.isLocked) {
@@ -92,7 +95,7 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       const failedAttempts = (user.failedAttempts || 0) + 1;
-      const isLocked = failedAttempts >= 5; // lock after 5 fails
+      const isLocked = failedAttempts >= 5; 
 
       await usersCollection.updateOne(
         { email },
