@@ -1,15 +1,17 @@
 const express = require('express');
-const {
-  getRiders,
-  deleteRiderById,
-  becomeRider,
-  updateRiderById,
-} = require('../controllers/ridersController');
 const router = express.Router();
+const {
+  becomeRider,
+  getRiders,
+  getSingleRider,
+  updateRiderById,
+  deleteRiderById,
+} = require('../controllers/ridersController');
 
-router.get('/riders', getRiders);
 router.post('/become-rider', becomeRider);
-router.put('/update-rider', updateRiderById);
-router.put('/delete-rider', deleteRiderById);
+router.get('/riders', getRiders);
+router.post('/rider/:id', getSingleRider);
+router.put('/update-rider/:id', updateRiderById);
+router.delete('/delete-rider/:id', deleteRiderById);
 
 module.exports = router;

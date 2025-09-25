@@ -1,29 +1,35 @@
 // controllers/authController.js
-const { getDb } = require("../config/db");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const { getCollection } = require('../utils/getCollection');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const transporter = require('../config/email');
 
-// ==========================
-// Register Controller (NID check)
-// ==========================
+// POST: Register Controller (NID check without email)
 const registerUser = async (req, res) => {
-  const db = getDb();
-  const nidCollection = db.collection("nidCollection");   // Dummy NID DB
-  const usersCollection = db.collection("users");        // Real users DB
+  const nidCollection = getCollection('nidCollection"'); // Dummy NID DB
+  const usersCollection = getCollection('users'); // Real users DB
 
   try {
-    const { NIDno, dateOfBirth, email, password, photoUrl } = req.body;
+    const { fullName, NIDno, dateOfBirth, email, password, photoUrl } =
+      req.body;
 
     // 1. NID validation from dummy DB
-    const nidData = await nidCollection.findOne({ NIDno, email, dateOfBirth });
+    const nidData = await nidCollection.findOne({
+      fullName,
+      NIDno,
+      dateOfBirth,
+    });
     if (!nidData) {
-      return res.status(404).json({ message: "NID not found or invalid" });
+      return res.status(404).json({ message: 'NID not found or invalid' });
     }
 
     // 2. Check if user already exists
     const existingUser = await usersCollection.findOne({ NIDno });
     if (existingUser) {
-      return res.status(400).json({ message: "User already registered. Please login." });
+      return res
+        .status(400)
+        .json({ message: 'User already registered. Please login.' });
     }
 
     // 3. Hash password
@@ -32,6 +38,7 @@ const registerUser = async (req, res) => {
     // 4. Create user
     const newUser = {
       ...nidData,
+      email,
       password: hashedPassword,
       role: 'user',
       isVerified: 'pending',
@@ -45,21 +52,18 @@ const registerUser = async (req, res) => {
     const result = await usersCollection.insertOne(newUser);
 
     res.status(201).json({
-      message: "User registered successfully",
+      message: 'User registered successfully',
       userId: result.insertedId,
     });
   } catch (error) {
-    console.error("Register error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Register error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-// ==========================
-// Login Controller with failed attempts
-// ==========================
+// POST: Login Controller with failed attempts
 const loginUser = async (req, res) => {
-  const db = getDb();
-  const usersCollection = db.collection("users");
+  const usersCollection = getCollection('users');
 
   try {
     const { email, password } = req.body;
@@ -67,14 +71,17 @@ const loginUser = async (req, res) => {
     // 1. Find user
     const user = await usersCollection.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     // 2. Check if account is locked
     if (user.isLocked) {
       // Optional: auto-unlock after 30 min
       const lockDuration = 30 * 60 * 1000; // 30 minutes
-      if (user.lastFailedAt && (Date.now() - user.lastFailedAt.getTime()) > lockDuration) {
+      if (
+        user.lastFailedAt &&
+        Date.now() - user.lastFailedAt.getTime() > lockDuration
+      ) {
         await usersCollection.updateOne(
           { email },
           { $set: { isLocked: false, failedAttempts: 0 } }
@@ -83,7 +90,8 @@ const loginUser = async (req, res) => {
         user.failedAttempts = 0;
       } else {
         return res.status(403).json({
-          message: "Account locked due to multiple failed login attempts. Try later."
+          message:
+            'Account locked due to multiple failed login attempts. Try later.',
         });
       }
     }
@@ -96,13 +104,13 @@ const loginUser = async (req, res) => {
 
       await usersCollection.updateOne(
         { email },
-        { 
+        {
           $set: { isLocked, lastFailedAt: new Date() },
-          $inc: { failedAttempts: 1 }
+          $inc: { failedAttempts: 1 },
         }
       );
 
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // 4. Reset failed attempts on success
@@ -117,18 +125,106 @@ const loginUser = async (req, res) => {
     const token = jwt.sign(
       { id: user._id, nid: user.nid, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: '1d' }
     );
 
     res.status(200).json({
-      message: "Login successful",
+      message: 'Login successful',
       token,
       user,
     });
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-module.exports = { registerUser, loginUser };
+// POST: Forgot Password Controller
+const forgotPassword = async (req, res) => {
+  const usersCollection = getCollection('users');
+
+  try {
+    const { email } = req.body;
+    const user = await usersCollection.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpire = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Save token and expiration as Date in DB
+    await usersCollection.updateOne(
+      { email },
+      { $set: { resetToken, resetExpire } }
+    );
+
+    // Construct reset link
+    const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    // Send reset email
+    await transporter.sendMail({
+      from: `"RideX Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Password Reset Request',
+      html: `
+        <h2>Password Reset</h2>
+        <p>Hello ${user.fullName || 'User'},</p>
+        <p>You requested to reset your password. Click the link below to reset it:</p>
+        <a href="${resetLink}" target="_blank">${resetLink}</a>
+        <p>This link will expire in 10 minutes.</p>
+        <p>If you did not request this, ignore this email.</p>
+      `,
+    });
+
+    return res
+      .status(200)
+      .json({ message: 'Password reset link sent to your email' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// POST: Reset Password Controller
+const resetPassword = async (req, res) => {
+  const usersCollection = getCollection('users');
+
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    const user = await usersCollection.findOne({ resetToken: resetToken });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid token' });
+    }
+
+    console.log(user.resetExpire, user.email);
+    const now = new Date();
+    if (!user.resetExpire || user.resetExpire <= now) {
+      return res.status(400).json({ message: 'Token has expired' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await usersCollection.updateOne(
+      { email: user.email },
+      {
+        $set: { password: hashedPassword },
+        $unset: { resetToken: '', resetExpire: '' },
+      }
+    );
+
+    return res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  forgotPassword,
+  resetPassword,
+};
