@@ -23,9 +23,10 @@ app.get("/", (req, res) => {
 });
 
 // ROUTES
-app.use('/api', userRoutes);   
 app.use('/api/auth', authRoutes); 
-app.use('/api/rider', riderRoutes); 
+app.use('/api', userRoutes);   
+app.use('/api', riderRoutes); 
+app.use('/api/rider-manage', authRoutes); 
 
 // Start server
 const PORT = process.env.PORT || 5000;
