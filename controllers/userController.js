@@ -5,7 +5,9 @@ const { ObjectId } = require('mongodb');
 const getAllUsers = async (req, res) => {
   try {
     const usersCollection = getCollection('users');
+
     const users = await usersCollection.find().toArray();
+
     res.status(200).json(users);
   } catch (error) {
     console.error('❌ Error fetching users:', error);
@@ -16,12 +18,10 @@ const getAllUsers = async (req, res) => {
 // GET: Get single user by ID
 const getSingleUser = async (req, res) => {
   try {
-    const { id } = req.query;
+      const { id } = req.params;
 
     if (!id) {
-      return res
-        .status(400)
-        .json({ message: 'Id is required' });
+      return res.status(400).json({ message: 'Id is required' });
     }
 
     const usersCollection = getCollection('users');
@@ -45,7 +45,7 @@ const getSingleUser = async (req, res) => {
 // PATCH: Update user by ID
 const updateUser = async (req, res) => {
   try {
-    const { id } = req.params;
+   const { id } = req.params;
     const updatedData = req.body;
 
     if (!id) {
@@ -73,7 +73,7 @@ const updateUser = async (req, res) => {
 // DELETE: Delete user by ID
 const deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
+   const { id } = req.params;
 
     if (!id) {
       return res.status(400).json({ message: 'Id is required' });
@@ -94,4 +94,9 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = { getAllUsers, getSingleUser, updateUser, deleteUser };
+module.exports = {
+  getAllUsers,
+  getSingleUser,
+  updateUser,
+  deleteUser,
+};
