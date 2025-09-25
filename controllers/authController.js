@@ -33,13 +33,13 @@ const registerUser = async (req, res) => {
     const newUser = {
       ...nidData,
       password: hashedPassword,
-      role: "user",
-      isVerified: "pending", 
+      role: 'user',
+      isVerified: 'pending',
       photoUrl: photoUrl,
       failedAttempts: 0,
       isLocked: false,
       lastFailedAt: null,
-      createdAt: new Date(),
+      createdAt: new Date().toLocaleString(),
     };
 
     const result = await usersCollection.insertOne(newUser);
