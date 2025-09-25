@@ -1,38 +1,6 @@
 const { ObjectId } = require('mongodb');
 const { getCollection } = require('../utils/getCollection');
 
-// GET: Get all riders
-const getRiders = async (req, res) => {
-  try {
-    const ridersCollection = getCollection('riders');
-    const riders = await ridersCollection.find().toArray();
-    res.status(200).json({ riders });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-// POST: Simple rider insert (no checks)
-const addRiderDirectly = async (req, res) => {
-  try {
-    const ridersCollection = getCollection('riders');
-    const riderData = req.body;
-
-    // automatically add createdAt if not provided
-    if (!riderData.createdAt) {
-      riderData.createdAt = new Date();
-    }
-
-    await ridersCollection.insertOne(riderData);
-    res
-      .status(201)
-      .json({ message: 'Rider added successfully', rider: riderData });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
 
 // POST: Become a rider with checks
 const becomeRider = async (req, res) => {
@@ -103,4 +71,59 @@ const becomeRider = async (req, res) => {
   }
 };
 
-module.exports = { getRiders, addRiderDirectly, becomeRider };
+// GET: Get all riders
+const getRiders = async (req, res) => {
+  try {
+    const ridersCollection = getCollection('riders');
+    const riders = await ridersCollection.find().toArray();
+    res.status(200).json({ riders });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// PUT: Update rider by ID
+const updateRiderById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    if (!id) return res.status(400).json({ message: 'Rider ID is required' });
+
+    if (!updateData || Object.keys(updateData).length === 0)
+      return res.status(400).json({ message: 'No data provided for update' });
+
+    const ridersCollection = getCollection('riders');
+
+    const existingRider = await ridersCollection.findOne({
+      _id: new ObjectId(id),
+    });
+    if (!existingRider)
+      return res.status(404).json({ message: 'Rider not found' });
+
+    // $set will update only the keys provided in the request body
+    await ridersCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+
+    const updatedRider = await ridersCollection.findOne({
+      _id: new ObjectId(id),
+    });
+
+    res.status(200).json({
+      message: 'Rider updated successfully',
+      rider: updatedRider,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = {
+  becomeRider,
+  getRiders,
+  updateRiderById,
+};

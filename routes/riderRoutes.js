@@ -1,13 +1,13 @@
 const express = require('express');
 const {
   getRiders,
-  addRiderDirectly,
   becomeRider,
+  updateRiderById,
 } = require('../controllers/ridersController');
 const router = express.Router();
 
 router.get('/riders', getRiders);
-router.post('/add-rider', addRiderDirectly);
 router.post('/become-rider', becomeRider);
+router.put('/update-rider', updateRiderById);
 
 module.exports = router;
