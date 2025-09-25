@@ -30,7 +30,7 @@ const becomeRider = async (req, res) => {
     const existingRider = await ridersCollection.findOne({
       userId: new ObjectId(userId),
     });
-    
+
     if (existingRider && existingRider.status === 'pending') {
       return res
         .status(400)
@@ -77,6 +77,7 @@ const getRiders = async (req, res) => {
   try {
     const ridersCollection = getCollection('riders');
     const riders = await ridersCollection.find().toArray();
+
     res.status(200).json({ riders });
   } catch (error) {
     console.error(error);
@@ -136,7 +137,8 @@ const deleteRiderById = async (req, res) => {
         return res.status(404).json({ message: 'Rider not found' });
     }
     
-    const result = await ridersCollection.deleteOne({ id });
+    const result = await ridersCollection.deleteOne({ _id: new ObjectId(id) });
+    
     if (result.deletedCount === 0) {
         return res.status(404).json({ message: 'Rider not found' });
       }

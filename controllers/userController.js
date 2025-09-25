@@ -1,7 +1,7 @@
 const { getCollection } = require('../utils/getCollection');
 const { ObjectId } = require('mongodb');
 
-// get all data of the users
+// GET: Get all users
 const getAllUsers = async (req, res) => {
   try {
     const usersCollection = getCollection('users');
@@ -13,20 +13,21 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// get single user data by _id and email
+// GET: Get single user by ID
 const getSingleUser = async (req, res) => {
   try {
-    const { id, email } = req.query;
+    const { id } = req.query;
 
-    if (!id || !email) {
-      return res.status(400).json({ message: 'User _id and email both required' });
+    if (!id) {
+      return res
+        .status(400)
+        .json({ message: 'Id is required' });
     }
 
     const usersCollection = getCollection('users');
 
-    const query = { 
-      _id: new ObjectId(id), 
-      email 
+    const query = {
+      _id: new ObjectId(id),
     };
     const singleUser = await usersCollection.findOne(query);
 
@@ -41,20 +42,20 @@ const getSingleUser = async (req, res) => {
   }
 };
 
-// update user
+// PATCH: Update user by ID
 const updateUser = async (req, res) => {
   try {
-    const { email } = req.params;
+    const { id } = req.params;
     const updatedData = req.body;
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+    if (!id) {
+      return res.status(400).json({ message: 'Id is required' });
     }
 
     const usersCollection = getCollection('users');
 
     const result = await usersCollection.updateOne(
-      { email },
+      { _id: new ObjectId(id) },
       { $set: updatedData }
     );
 
@@ -69,18 +70,18 @@ const updateUser = async (req, res) => {
   }
 };
 
-// DELETE: Delete user
+// DELETE: Delete user by ID
 const deleteUser = async (req, res) => {
   try {
-    const { email } = req.params;
+    const { id } = req.params;
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+    if (!id) {
+      return res.status(400).json({ message: 'Id is required' });
     }
 
     const usersCollection = getCollection('users');
 
-    const result = await usersCollection.deleteOne({ email });
+    const result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: 'User not found' });

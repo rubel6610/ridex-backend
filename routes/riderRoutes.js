@@ -10,6 +10,6 @@ const router = express.Router();
 router.get('/riders', getRiders);
 router.post('/become-rider', becomeRider);
 router.put('/update-rider', updateRiderById);
-router.put('/delete-rider', deleteRiderById);
+router.delete('/delete-rider', deleteRiderById);
 
 module.exports = router;
