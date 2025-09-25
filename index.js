@@ -6,12 +6,13 @@ require('dotenv').config({ quiet: true });
 
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes'); 
+const riderRoutes = require('./routes/riderRoutes');
 
 const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000','http://localhost:3001','https://ridex-fronted.netlify.app'],
+  origin: ['http://localhost:3000','http://localhost:3001','http://localhost:3001','https://ridex-fronted.netlify.app'],
   credentials: true, 
 }));
 app.use(express.json());
@@ -24,6 +25,7 @@ app.get("/", (req, res) => {
 // ROUTES
 app.use('/api', userRoutes);   
 app.use('/api/auth', authRoutes); 
+app.use('/api/rider', riderRoutes); 
 
 // Start server
 const PORT = process.env.PORT || 5000;
