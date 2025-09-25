@@ -122,8 +122,34 @@ const updateRiderById = async (req, res) => {
   }
 };
 
+// DELETE: Delete rider by ID
+const deleteRiderById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ message: 'Rider ID is required' });
+
+    const existingRider = await ridersCollection.findOne({
+      _id: new ObjectId(id),
+    });
+    if (!existingRider){
+        return res.status(404).json({ message: 'Rider not found' });
+    }
+    
+    const result = await ridersCollection.deleteOne({ id });
+    if (result.deletedCount === 0) {
+        return res.status(404).json({ message: 'Rider not found' });
+      }
+
+    res.status(200).json({ message: 'Rider deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   becomeRider,
   getRiders,
+  deleteRiderById,
   updateRiderById,
 };
