@@ -1,13 +1,13 @@
 const { ObjectId } = require('mongodb');
-const bcrypt = require('bcrypt');
 const { getCollection } = require('../utils/getCollection');
+const bcrypt = require('bcrypt');
+
 
 // POST: Become a rider with password validation
 const becomeRider = async (req, res) => {
   try {
     const ridersCollection = getCollection('riders');
     const usersCollection = getCollection('users');
-
     const {
       userId,
       password,

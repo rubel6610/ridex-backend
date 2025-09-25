@@ -7,7 +7,7 @@ const transporter = require('../config/email');
 
 // POST: Register Controller (NID check without email)
 const registerUser = async (req, res) => {
-  const nidCollection = getCollection('nidCollection"'); // Dummy NID DB
+  const nidCollection = getCollection('nidCollection'); // Dummy NID DB
   const usersCollection = getCollection('users'); // Real users DB
 
   try {
@@ -21,15 +21,33 @@ const registerUser = async (req, res) => {
       dateOfBirth,
     });
     if (!nidData) {
-      return res.status(404).json({ message: 'NID not found or invalid' });
+      return res
+        .status(404)
+        .json({ message: 'NID not found or invalid. Check your data.' });
     }
 
     // 2. Check if user already exists
     const existingUser = await usersCollection.findOne({ NIDno });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: 'User already registered. Please login.' });
+      // check isVerified status
+      if (existingUser.isVerified === 'approved') {
+        return res
+          .status(400)
+          .json({ message: 'You are already registered and approved.' });
+      } else if (existingUser.isVerified === 'rejected') {
+        return res.status(400).json({
+          message:
+            'Your previous registration was rejected. Please check your NID or required data.',
+        });
+      } else if (existingUser.isVerified === 'pending') {
+        return res
+          .status(400)
+          .json({ message: 'Your registration is under review.' });
+      } else {
+        return res
+          .status(400)
+          .json({ message: 'User already exists. Please login.' });
+      }
     }
 
     // 3. Hash password
@@ -52,7 +70,7 @@ const registerUser = async (req, res) => {
     const result = await usersCollection.insertOne(newUser);
 
     res.status(201).json({
-      message: 'User registered successfully',
+      message: 'User registered successfully and is under review.',
       userId: result.insertedId,
     });
   } catch (error) {
@@ -60,6 +78,9 @@ const registerUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+module.exports = { registerUser };
+
 
 // POST: Login Controller with failed attempts
 const loginUser = async (req, res) => {
@@ -72,6 +93,9 @@ const loginUser = async (req, res) => {
     const user = await usersCollection.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+    if(user.isVerified === "pending"){
+      return res.status(404).json({ message: "Account is under reviewed by admin" });
     }
 
     // 2. Check if account is locked
@@ -100,7 +124,7 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       const failedAttempts = (user.failedAttempts || 0) + 1;
-      const isLocked = failedAttempts >= 5; // lock after 5 fails
+      const isLocked = failedAttempts >= 5; 
 
       await usersCollection.updateOne(
         { email },
