@@ -7,7 +7,6 @@ const becomeRider = async (req, res) => {
   try {
     const ridersCollection = getCollection('riders');
     const usersCollection = getCollection('users');
-
     const {
       userId,
       present_address,
