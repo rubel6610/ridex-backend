@@ -1,9 +1,7 @@
 const { ObjectId } = require('mongodb');
 const { getCollection } = require('../utils/getCollection');
-
 const bcrypt = require('bcrypt');
-const { ObjectId } = require('mongodb');
-const { getCollection } = require('../utils/getCollection');
+
 
 // POST: Become a rider with password validation
 const becomeRider = async (req, res) => {
