@@ -30,6 +30,7 @@ const becomeRider = async (req, res) => {
     const existingRider = await ridersCollection.findOne({
       userId: new ObjectId(userId),
     });
+    
     if (existingRider && existingRider.status === 'pending') {
       return res
         .status(400)

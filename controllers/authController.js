@@ -3,8 +3,9 @@ const { getDb } = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+
 // ==========================
-// Register Controller (NID check)
+// Register Controller (NID check without email)
 // ==========================
 const registerUser = async (req, res) => {
   const db = getDb();
@@ -12,10 +13,10 @@ const registerUser = async (req, res) => {
   const usersCollection = db.collection("users");        // Real users DB
 
   try {
-    const { NIDno, dateOfBirth, email, password, photoUrl } = req.body;
+    const { fullName, NIDno, dateOfBirth, email, password, photoUrl } = req.body;
 
-    // 1. NID validation from dummy DB
-    const nidData = await nidCollection.findOne({ NIDno, email, dateOfBirth });
+    // 1. NID validation from dummy DB (without email check)
+    const nidData = await nidCollection.findOne({ fullName, NIDno, dateOfBirth });
     if (!nidData) {
       return res.status(404).json({ message: "NID not found or invalid" });
     }
@@ -32,9 +33,10 @@ const registerUser = async (req, res) => {
     // 4. Create user
     const newUser = {
       ...nidData,
+      email, // user-provided email will be saved now
       password: hashedPassword,
-      role: 'user',
-      isVerified: 'pending',
+      role: "user",
+      isVerified: "pending",
       photoUrl: photoUrl,
       failedAttempts: 0,
       isLocked: false,
