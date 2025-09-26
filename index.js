@@ -7,6 +7,8 @@ require('dotenv').config({ quiet: true });
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes'); 
 const riderRoutes = require('./routes/riderRoutes');
+const userManageRoutes = require('./routes/userManageRoutes');
+const riderManageRoutes = require('./routes/riderManageRoutes');
 
 const app = express();
 
@@ -23,9 +25,11 @@ app.get("/", (req, res) => {
 });
 
 // ROUTES
-app.use('/api', userRoutes);   
 app.use('/api/auth', authRoutes); 
-app.use('/api/rider', riderRoutes); 
+app.use('/api', userRoutes);   
+app.use('/api', riderRoutes); 
+app.use('/api', userManageRoutes); 
+app.use('/api', riderManageRoutes); 
 
 // Start server
 const PORT = process.env.PORT || 5000;

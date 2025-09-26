@@ -1,29 +1,54 @@
 // controllers/authController.js
-const { getDb } = require("../config/db");
+const { getCollection } = require("../utils/getCollection");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const transporter = require("../config/email");
 
-// ==========================
-// Register Controller (NID check)
-// ==========================
+// ============================
+// POST: Register Controller
+// ============================
 const registerUser = async (req, res) => {
-  const db = getDb();
-  const nidCollection = db.collection("nidCollection");   // Dummy NID DB
-  const usersCollection = db.collection("users");        // Real users DB
+  const nidCollection = getCollection("nidCollection"); // Dummy NID DB
+  const usersCollection = getCollection("users"); // Real users DB
 
   try {
-    const { NIDno, dateOfBirth, email, password, photoUrl } = req.body;
+    const { fullName, NIDno, dateOfBirth, email, password, photoUrl } =
+      req.body;
 
-    // 1. NID validation from dummy DB
-    const nidData = await nidCollection.findOne({ NIDno, email, dateOfBirth });
+    // 1. NID validation
+    const nidData = await nidCollection.findOne({
+      fullName,
+      NIDno,
+      dateOfBirth,
+    });
     if (!nidData) {
-      return res.status(404).json({ message: "NID not found or invalid" });
+      return res
+        .status(404)
+        .json({ message: "NID not found or invalid. Check your data." });
     }
 
     // 2. Check if user already exists
     const existingUser = await usersCollection.findOne({ NIDno });
     if (existingUser) {
-      return res.status(400).json({ message: "User already registered. Please login." });
+      if (existingUser.isVerified === "approved") {
+        return res
+          .status(400)
+          .json({ message: "You are already registered and approved." });
+      } else if (existingUser.isVerified === "rejected") {
+        return res.status(400).json({
+          message:
+            "Your previous registration was rejected. Please check your NID or required data.",
+        });
+      } else if (existingUser.isVerified === "pending") {
+        return res
+          .status(400)
+          .json({ message: "Your registration is under review." });
+      } else {
+        return res
+          .status(400)
+          .json({ message: "User already exists. Please login." });
+      }
     }
 
     // 3. Hash password
@@ -32,10 +57,11 @@ const registerUser = async (req, res) => {
     // 4. Create user
     const newUser = {
       ...nidData,
+      email,
       password: hashedPassword,
-      role: 'user',
-      isVerified: 'pending',
-      photoUrl: photoUrl,
+      role: "user",
+      isVerified: "pending",
+      photoUrl,
       failedAttempts: 0,
       isLocked: false,
       lastFailedAt: null,
@@ -45,7 +71,7 @@ const registerUser = async (req, res) => {
     const result = await usersCollection.insertOne(newUser);
 
     res.status(201).json({
-      message: "User registered successfully",
+      message: "User registered successfully and is under review.",
       userId: result.insertedId,
     });
   } catch (error) {
@@ -54,12 +80,11 @@ const registerUser = async (req, res) => {
   }
 };
 
-// ==========================
-// Login Controller with failed attempts
-// ==========================
+// ============================
+// POST: Login Controller
+// ============================
 const loginUser = async (req, res) => {
-  const db = getDb();
-  const usersCollection = db.collection("users");
+  const usersCollection = getCollection("users");
 
   try {
     const { email, password } = req.body;
@@ -72,9 +97,11 @@ const loginUser = async (req, res) => {
 
     // 2. Check if account is locked
     if (user.isLocked) {
-      // Optional: auto-unlock after 30 min
       const lockDuration = 30 * 60 * 1000; // 30 minutes
-      if (user.lastFailedAt && (Date.now() - user.lastFailedAt.getTime()) > lockDuration) {
+      if (
+        user.lastFailedAt &&
+        Date.now() - user.lastFailedAt.getTime() > lockDuration
+      ) {
         await usersCollection.updateOne(
           { email },
           { $set: { isLocked: false, failedAttempts: 0 } }
@@ -83,7 +110,8 @@ const loginUser = async (req, res) => {
         user.failedAttempts = 0;
       } else {
         return res.status(403).json({
-          message: "Account locked due to multiple failed login attempts. Try later."
+          message:
+            "Account locked due to multiple failed login attempts. Try later.",
         });
       }
     }
@@ -92,26 +120,32 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       const failedAttempts = (user.failedAttempts || 0) + 1;
-      const isLocked = failedAttempts >= 5; // lock after 5 fails
+      const isLocked = failedAttempts >= 5;
 
       await usersCollection.updateOne(
         { email },
-        { 
+        {
           $set: { isLocked, lastFailedAt: new Date() },
-          $inc: { failedAttempts: 1 }
+          $inc: { failedAttempts: 1 },
         }
       );
 
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 4. Reset failed attempts on success
-    if (user.failedAttempts > 0 || user.isLocked) {
-      await usersCollection.updateOne(
-        { email },
-        { $set: { failedAttempts: 0, isLocked: false } }
-      );
-    }
+    // 4. Reset failed attempts on success & update lastLogin
+    const currentLoginTime = new Date().toLocaleString();
+    await usersCollection.updateOne(
+      { email },
+      {
+        $set: {
+          failedAttempts: 0,
+          isLocked: false,
+          lastLogin: currentLoginTime,
+        },
+      },
+      { upsert: true }
+    );
 
     // 5. Issue JWT
     const token = jwt.sign(
@@ -123,7 +157,10 @@ const loginUser = async (req, res) => {
     res.status(200).json({
       message: "Login successful",
       token,
-      user,
+      user: {
+        ...user,
+        lastLogin: currentLoginTime, // return updated login time
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -131,4 +168,91 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser };
+// ============================
+// POST: Forgot Password
+// ============================
+const forgotPassword = async (req, res) => {
+  const usersCollection = getCollection("users");
+
+  try {
+    const { email } = req.body;
+    const user = await usersCollection.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetExpire = new Date(Date.now() + 10 * 60 * 1000);
+
+    await usersCollection.updateOne(
+      { email },
+      { $set: { resetToken, resetExpire } }
+    );
+
+    const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    await transporter.sendMail({
+      from: `"RideX Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset Request",
+      html: `
+        <h2>Password Reset</h2>
+        <p>Hello ${user.fullName || "User"},</p>
+        <p>You requested to reset your password. Click the link below to reset it:</p>
+        <a href="${resetLink}" target="_blank">${resetLink}</a>
+        <p>This link will expire in 10 minutes.</p>
+        <p>If you did not request this, ignore this email.</p>
+      `,
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Password reset link sent to your email" });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ============================
+// POST: Reset Password
+// ============================
+const resetPassword = async (req, res) => {
+  const usersCollection = getCollection("users");
+
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    const user = await usersCollection.findOne({ resetToken });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+
+    const now = new Date();
+    if (!user.resetExpire || user.resetExpire <= now) {
+      return res.status(400).json({ message: "Token has expired" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await usersCollection.updateOne(
+      { email: user.email },
+      {
+        $set: { password: hashedPassword },
+        $unset: { resetToken: "", resetExpire: "" },
+      }
+    );
+
+    return res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  forgotPassword,
+  resetPassword,
+};
