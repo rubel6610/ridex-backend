@@ -4,7 +4,7 @@ const { getAllUsers, getSingleUser, updateUser, deleteUser } = require("../contr
 
 router.get("/users", getAllUsers);
 router.get("/user", getSingleUser);
-router.patch("/user/:id", updateUser);
+router.put("/user/:id", updateUser);
 router.delete("/user/:id", deleteUser);
 
 module.exports = router;

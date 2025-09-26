@@ -1,66 +1,42 @@
-const { getCollection } = require('../utils/getCollection');
-const { ObjectId } = require('mongodb');
+const { getCollection } = require("../utils/getCollection");
+const { ObjectId } = require("mongodb");
 
-// PUT: Approve user
-const approveUser = async (req, res) => {
+// PATCH: Approve or Reject user
+const approveAndrejectUser = async (req, res) => {
   try {
-    const usersCollection = getCollection('users');
+    const usersCollection = getCollection("users");
     const { id } = req.params;
+    const { status } = req.body; 
 
     if (!id) {
-      return res.status(400).json({ message: 'User ID is required' });
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    if (!status || !["approved", "rejected"].includes(status)) {
+      return res
+        .status(400)
+        .json({ message: 'Status must be either "approved" or "rejected"' });
     }
 
     const user = await usersCollection.findOne({ _id: new ObjectId(id) });
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.isVerified === 'approved') {
-      return res.status(400).json({ message: 'User is already approved.' });
-    }
-
-    await usersCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { isVerified: 'approved' } }
-    );
-
-    res.status(200).json({ message: 'User approved successfully.' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-// PUT: Reject user
-const rejectUser = async (req, res) => {
-  try {
-    const usersCollection = getCollection('users');
-    const { id } = req.params;
-
-    if (!id) {
-      return res.status(400).json({ message: 'User ID is required' });
-    }
-
-    const user = await usersCollection.findOne({ _id: new ObjectId(id) });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (user.isVerified === 'rejected') {
-      return res.status(400).json({ message: 'User is already rejected.' });
+    if (user.isVerified === status) {
+      return res.status(400).json({ message: `User is already ${status}.` });
     }
 
     await usersCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { isVerified: 'rejected' } }
+      { $set: { isVerified: status } }
     );
 
-    res.status(200).json({ message: 'User rejected successfully.' });
+    res.status(200).json({ message: `User ${status} successfully.`, status: status });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-module.exports = { approveUser, rejectUser };
+module.exports = { approveAndrejectUser };
