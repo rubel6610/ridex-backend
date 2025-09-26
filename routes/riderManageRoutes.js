@@ -1,11 +1,9 @@
 const express = require('express');
+const { approveAndRejectRider } = require('../controllers/ridersManageController');
 const router = express.Router();
-const {
-  approveRider,
-  rejectRider,
-} = require('../controllers/ridersManageController');
 
-router.post('/approve-rider/:id', approveRider);
-router.post('/reject-rider/:id', rejectRider);
+
+router.patch("/approveAndreject-rider/:id", approveAndRejectRider);
+
 
 module.exports = router;
