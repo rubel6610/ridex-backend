@@ -1,3 +1,4 @@
+// config/db.js
 const { MongoClient } = require('mongodb');
 require('dotenv').config({ quiet: true });
 
