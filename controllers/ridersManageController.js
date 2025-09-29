@@ -21,16 +21,10 @@ const approveRider = async (req, res) => {
       return res.status(404).json({ message: 'Rider not found' });
     }
 
-    // update rider status to approved
-    await ridersCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { status: 'approved', approvedAt: new Date() } }
-    );
-
     // update user role to rider
     await usersCollection.updateOne(
       { _id: rider.id },
-      { $set: { role: 'rider' } }
+      { $set: { role: 'rider', approvedAt: new Date() } }
     );
 
     res.status(200).json({ message: 'Rider approved successfully' });

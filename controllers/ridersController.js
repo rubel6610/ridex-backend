@@ -2,7 +2,6 @@ const { ObjectId } = require('mongodb');
 const { getCollection } = require('../utils/getCollection');
 const bcrypt = require('bcrypt');
 
-
 // POST: Become a rider with password validation
 const becomeRider = async (req, res) => {
   try {
@@ -28,16 +27,12 @@ const becomeRider = async (req, res) => {
     });
 
     // check if user already rider
-    if (user.role === 'rider' && existingRider.status === 'approved') {
+    if (user.role === 'rider') {
       return res.status(400).json({ message: 'You are already a rider' });
     }
 
     // check if user already requested to be a rider
-    if (
-      existingRider &&
-      existingRider.status === 'pending' &&
-      user.role === 'user'
-    ) {
+    if (existingRider && user.role === 'user') {
       return res
         .status(400)
         .json({ message: 'Your rider request is already under review' });
@@ -65,7 +60,13 @@ const becomeRider = async (req, res) => {
       vehicleRegisterNumber,
       drivingLicense,
       password: hashedPassword,
-      status: 'pending',
+      status: 'offline', // offline / online / on-trip
+      location: {
+        type: 'Point',
+        coordinates: [null, null],
+      },
+      ongoingTripId: null,
+      lastUpdated: null,
       createdAt: new Date(),
     };
 
@@ -79,7 +80,7 @@ const becomeRider = async (req, res) => {
       );
     }
 
-    res.status(201).json({ message: 'Rider request submitted' });
+    res.status(201).json({ message: 'Rider request submitted!' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -103,12 +104,10 @@ const getRiders = async (req, res) => {
 // GET: Get single rider by ID
 const getSingleRider = async (req, res) => {
   try {
-     const { id } = req.params;
+    const { id } = req.params;
 
     if (!id) {
-      return res
-        .status(400)
-        .json({ message: 'Id is required' });
+      return res.status(400).json({ message: 'Id is required' });
     }
 
     const risersCollection = getCollection('riders');
@@ -163,21 +162,21 @@ const updateRiderById = async (req, res) => {
 // DELETE: Delete rider by ID
 const deleteRiderById = async (req, res) => {
   try {
-   const { id } = req.params;
+    const { id } = req.params;
     if (!id) return res.status(400).json({ message: 'Rider ID is required' });
 
     const existingRider = await ridersCollection.findOne({
       _id: new ObjectId(id),
     });
-    if (!existingRider){
-        return res.status(404).json({ message: 'Rider not found' });
+    if (!existingRider) {
+      return res.status(404).json({ message: 'Rider not found' });
     }
-    
+
     const result = await ridersCollection.deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
-        return res.status(404).json({ message: 'Rider not found' });
-      }
+      return res.status(404).json({ message: 'Rider not found' });
+    }
 
     res.status(200).json({ message: 'Rider deleted successfully' });
   } catch (error) {
