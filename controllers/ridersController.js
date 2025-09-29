@@ -2,6 +2,7 @@ const { ObjectId } = require('mongodb');
 const { getCollection } = require('../utils/getCollection');
 const bcrypt = require('bcrypt');
 
+// RIDERS INITIAL AND REGISTER CONTROLLERS:
 // POST: Become a rider with password validation
 const becomeRider = async (req, res) => {
   try {
@@ -185,10 +186,32 @@ const deleteRiderById = async (req, res) => {
   }
 };
 
+// RIDERS RIDING PROCESS CONTROLLERS:
+// POST: Request to update rider active status
+const requestStatus = async (req, res) => {
+  try {
+    const ridersCollection = getCollection('riders');
+    const { riderId, status } = req.body; // online/offline
+
+    await ridersCollection.updateOne(
+      { _id: new ObjectId(riderId) },
+      { $set: { status } }
+    );
+
+    res
+      .status(200)
+      .json({ success: true, message: 'Rider status updated successfully!' });
+  } catch {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   becomeRider,
   getRiders,
   getSingleRider,
   deleteRiderById,
   updateRiderById,
+  requestStatus,
 };
