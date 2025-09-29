@@ -28,12 +28,13 @@ const approveAndRejectRider = async (req, res) => {
       return res.status(400).json({ message: `Rider is already ${status}.` });
     }
 
-    await ridersCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { status: status } }
+    // update user role to rider
+    await usersCollection.updateOne(
+      { _id: rider.id },
+      { $set: { role: 'rider', approvedAt: new Date() } }
     );
 
-    res.status(200).json({ message: `Rider ${status} successfully.`, status: status });
+    res.status(200).json({ message: 'Rider approved successfully' });
   } catch (error) {
     console.error("Error in approveAndRejectRider:", error);
     res.status(500).json({ message: "Server error", error: error.message });
