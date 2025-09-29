@@ -44,8 +44,8 @@ const updateUser = async (req, res) => {
     const { id } = req.params;
     const updatedData = req.body;
 
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
+    if (!id) {
+      return res.status(400).json({ message: "id is required" });
     }
 
     const usersCollection = getCollection("users");
