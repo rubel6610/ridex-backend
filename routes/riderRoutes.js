@@ -7,6 +7,7 @@ const {
   updateRiderById,
   deleteRiderById,
   requestStatus,
+  updateLocation,
 } = require('../controllers/ridersController');
 
 // RIDERS INITIAL AND REGISTER APIS:
@@ -18,5 +19,6 @@ router.delete('/delete-rider/:id', deleteRiderById);
 
 // RIDERS RIDING PROCESS APIS:
 router.post('/status', requestStatus);
+router.post('/location', updateLocation);
 
 module.exports = router;

@@ -207,6 +207,34 @@ const requestStatus = async (req, res) => {
   }
 };
 
+// POST: Riders location update request
+const updateLocation = async (req, res) => {
+  try {
+    const ridersCollection = getCollection('riders');
+    const { riderId, longitude, latitude } = req.body;
+
+    const updatedDoc = {
+      location: {
+        type: 'Point',
+        coordinates: [longitude, latitude],
+      },
+      lastUpdated: new Date(),
+    };
+
+    await ridersCollection.updateOne(
+      { _id: new ObjectId(riderId) },
+      { $set: { updatedDoc } }
+    );
+
+    res
+      .status(200)
+      .json({ success: true, message: 'Rider current location updated successfully!' });
+  } catch {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   becomeRider,
   getRiders,
@@ -214,4 +242,5 @@ module.exports = {
   deleteRiderById,
   updateRiderById,
   requestStatus,
+  updateLocation,
 };
