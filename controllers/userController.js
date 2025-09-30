@@ -16,6 +16,7 @@ const getAllNIds = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 // GET: Get all users
 const getAllUsers = async (req, res) => {
   try {

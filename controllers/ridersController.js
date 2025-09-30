@@ -102,7 +102,7 @@ const getRiders = async (req, res) => {
   }
 };
 
-// GET: Get single rider by ID
+// GET: Get single rider by rider ID
 const getSingleRider = async (req, res) => {
   try {
     const { id } = req.params;
@@ -113,7 +113,6 @@ const getSingleRider = async (req, res) => {
 
     const risersCollection = getCollection('riders');
 
- 
     const singleRider = await risersCollection.findOne({
       _id: new ObjectId(id),
     });
@@ -129,10 +128,32 @@ const getSingleRider = async (req, res) => {
   }
 };
 
+// GET: get single rider by userId
+const getSingleRiderByUserID = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    const ridersCollection = getCollection("riders");
+    const rider = await ridersCollection.findOne({ userId: userId });
+
+    if (!rider) {
+      return res.status(404).json({ message: "Rider not found" });
+    }
+
+    res.json(rider);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // POST: Insert many riders
 const insertRiders = async (req, res) => {
-   try {
-    const ridersCollection = getCollection('riders'); 
+  try {
+    const ridersCollection = getCollection('riders');
 
     const docs = req.body;
     if (!Array.isArray(docs) || docs.length === 0) {
@@ -223,51 +244,55 @@ const deleteAll = async (req, res) => {
 };
 
 // RIDERS RIDING PROCESS CONTROLLERS:
-// POST: Request to update rider active status
+// POST: update rider status by userId
 const requestStatus = async (req, res) => {
   try {
-    const ridersCollection = getCollection('riders');
-    const { riderId, status } = req.body; // online/offline
+    const ridersCollection = getCollection("riders");
+    const { userId, status } = req.body; // online/offline
 
-    await ridersCollection.updateOne(
-      { _id: new ObjectId(riderId) },
+    const result = await ridersCollection.updateOne(
+      { userId: userId },         // userId দিয়ে খুঁজছি
       { $set: { status } }
     );
 
-    res
-      .status(200)
-      .json({ success: true, message: 'Rider status updated successfully!' });
-  } catch {
+    res.status(200).json({
+      success: true,
+      message: "Rider status updated successfully!",
+      result,
+    });
+  } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-// POST: Riders location update request
+// POST: update rider location by userId
 const updateLocation = async (req, res) => {
   try {
-    const ridersCollection = getCollection('riders');
-    const { riderId, longitude, latitude } = req.body;
+    const ridersCollection = getCollection("riders");
+    const { userId, longitude, latitude } = req.body;
 
     const updatedDoc = {
       location: {
-        type: 'Point',
+        type: "Point",
         coordinates: [longitude, latitude],
       },
       lastUpdated: new Date(),
     };
 
-    await ridersCollection.updateOne(
-      { _id: new ObjectId(riderId) },
-      { $set: { updatedDoc } }
+    const result = await ridersCollection.updateOne(
+      { userId: userId },                 // userId দিয়ে খুঁজছি
+      { $set: updatedDoc }
     );
 
-    res
-      .status(200)
-      .json({ success: true, message: 'Rider current location updated successfully!' });
-  } catch {
+    res.status(200).json({
+      success: true,
+      message: "Rider current location updated successfully!",
+      result,
+    });
+  } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -275,6 +300,7 @@ module.exports = {
   becomeRider,
   getRiders,
   getSingleRider,
+  getSingleRiderByUserID,
   insertRiders,
   deleteRiderById,
   updateRiderById,
