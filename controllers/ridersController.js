@@ -113,10 +113,10 @@ const getSingleRider = async (req, res) => {
 
     const risersCollection = getCollection('riders');
 
-    const query = {
+ 
+    const singleRider = await risersCollection.findOne({
       _id: new ObjectId(id),
-    };
-    const singleRider = await risersCollection.findOne(query);
+    });
 
     if (!singleRider) {
       return res.status(404).json({ message: 'Rider not found' });
@@ -126,6 +126,27 @@ const getSingleRider = async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching user:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// POST: Insert many riders
+const insertRiders = async (req, res) => {
+   try {
+    const ridersCollection = getCollection('riders'); 
+
+    const docs = req.body;
+    if (!Array.isArray(docs) || docs.length === 0) {
+      return res.status(400).json({ message: 'Provide an array of documents' });
+    }
+
+    const result = await ridersCollection.insertMany(docs);
+    res.json({
+      message: `Inserted ${result.insertedCount} documents into riders collection`,
+      insertedIds: result.insertedIds,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -186,6 +207,21 @@ const deleteRiderById = async (req, res) => {
   }
 };
 
+// DELETE: Delete full collection
+const deleteAll = async (req, res) => {
+  try {
+    const DeleteCollection = getCollection('riders');
+
+    const result = await DeleteCollection.deleteMany({});
+    res.json({
+      message: `Deleted ${result.deletedCount} documents from riders collection`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // RIDERS RIDING PROCESS CONTROLLERS:
 // POST: Request to update rider active status
 const requestStatus = async (req, res) => {
@@ -239,8 +275,10 @@ module.exports = {
   becomeRider,
   getRiders,
   getSingleRider,
+  insertRiders,
   deleteRiderById,
   updateRiderById,
   requestStatus,
   updateLocation,
+  deleteAll,
 };

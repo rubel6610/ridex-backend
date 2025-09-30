@@ -3,6 +3,19 @@ const { getCollection } = require('../utils/getCollection');
 const { ObjectId } = require('mongodb');
 
 // USERS INITIAL CONTROLLERS:
+// GET: Get all NID collections
+const getAllNIds = async (req, res) => {
+  try {
+    const nidCollection = getCollection('nidCollection');
+
+    const users = await nidCollection.find().toArray();
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('❌ Error fetching users:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 // GET: Get all users
 const getAllUsers = async (req, res) => {
   try {
@@ -37,6 +50,27 @@ const getSingleUser = async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching user:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// POST: Insert many users
+const insertUsers = async (req, res) => {
+   try {
+    const usersCollection = getCollection('users'); 
+
+    const docs = req.body;
+    if (!Array.isArray(docs) || docs.length === 0) {
+      return res.status(400).json({ message: 'Provide an array of documents' });
+    }
+
+    const result = await usersCollection.insertMany(docs);
+    res.json({
+      message: `Inserted ${result.insertedCount} documents into users collection`,
+      insertedIds: result.insertedIds,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -89,6 +123,21 @@ const deleteUser = async (req, res) => {
   } catch (error) {
     console.error('❌ Error deleting user:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// DELETE: Delete full collection
+const deleteAll = async (req, res) => {
+  try {
+    const DeleteCollection = getCollection('users');
+
+    const result = await DeleteCollection.deleteMany({});
+    res.json({
+      message: `Deleted ${result.deletedCount} documents from users collection`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -200,9 +249,12 @@ const rideRequest = async (req, res) => {
 };
 
 module.exports = {
+  getAllNIds,
   getAllUsers,
   getSingleUser,
+  insertUsers,
   updateUser,
   deleteUser,
+  deleteAll,
   rideRequest,
 };
