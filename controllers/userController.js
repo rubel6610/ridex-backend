@@ -96,18 +96,26 @@ const deleteUser = async (req, res) => {
 // POST: User ride requests
 const rideRequest = async (req, res) => {
   try {
+    // Rider & Ride collection
     const ridersCollection = getCollection('riders');
+    const ridesCollection = getCollection('rides');
+
     const { userId, pickup, drop, vehicleType, fare } = req.body;
 
-    // aggregation pipeline দিয়ে nearest rider খুঁজছি
+    // Validate input
+    if (!userId || !pickup || !drop || !vehicleType || !fare) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // nearest rider search using geoNear
     const riders = await ridersCollection
       .aggregate([
         {
           $geoNear: {
-            near: pickup,
+            near: pickup, // { type: 'Point', coordinates: [lng, lat] }
             distanceField: 'distance',
             spherical: true,
-            maxDistance: 5000, // ৫ কিমি পর্যন্ত rider
+            maxDistance: 5000, // ৫ কিমি
           },
         },
         {
@@ -116,36 +124,50 @@ const rideRequest = async (req, res) => {
             vehicleType: vehicleType,
           },
         },
-        { $limit: 1 }, // শুধু ১ জন rider নেবে
+        { $limit: 1 },
       ])
       .toArray();
 
     if (riders.length === 0) {
-      return res.status(404).json({ message: 'No rider found' });
+      return res.status(404).json({ message: 'No rider found nearby' });
     }
 
     const rider = riders[0];
 
-    // rides collection এ insert করছি
+    // Ride document with default fields
     const ride = {
       userId: new ObjectId(userId),
       riderId: new ObjectId(rider._id),
       pickup,
       drop,
       fare,
+      vehicleType,
       status: 'pending',
       createdAt: new Date(),
+      acceptedAt: null,
+      rejectedAt: null,
+      cancelledAt: null,
+      liveLocation: null,
+      distance: rider.distance || null,
+      riderInfo: {
+        fullName: rider.fullName || null,
+        vehicleType: rider.vehicleType || null,
+        vehicleModel: rider.vehicleModel || null,
+        vehicleRegisterNumber: rider.vehicleRegisterNumber || null,
+        email: rider.email || null,
+      },
     };
 
-    const result = await ridersCollection('rides').insertOne(ride);
+    // Insert ride into rides collection
+    const result = await ridesCollection.insertOne(ride);
 
-    // এখানে Socket/Notification দিয়ে rider কে রিকোয়েস্ট পাঠাতে হবে
-    // উদাহরণ: io.to(rider._id.toString()).emit('ride-request', ride);
+    // TODO: Socket.IO: notify rider in real-time
+    // io.to(rider._id.toString()).emit('ride-request', ride);
 
-    // rider কে মেইল পাঠাচ্ছি (just for now)
+    // Send email to rider
     await transporter.sendMail({
       from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-      to: rider.email, // রাইডারের ইমেইল
+      to: rider.email,
       subject: 'New Ride Request',
       html: `
         <h2>New Ride Request</h2>
@@ -160,9 +182,19 @@ const rideRequest = async (req, res) => {
       `,
     });
 
-    res.json({ success: true, rideId: result.insertedId, rider });
+    // Response to frontend
+    res.status(201).json({
+      success: true,
+      rideId: result.insertedId,
+      rider: {
+        _id: rider._id,
+        fullName: rider.fullName,
+        vehicleType: rider.vehicleType,
+        distance: rider.distance,
+      },
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Ride request error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -174,4 +206,3 @@ module.exports = {
   deleteUser,
   rideRequest,
 };
-  
