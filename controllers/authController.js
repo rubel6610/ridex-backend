@@ -9,12 +9,12 @@ const transporter = require("../config/email");
 // POST: Register Controller
 // ============================
 const registerUser = async (req, res) => {
-  const nidCollection = getCollection("nidCollection"); // Dummy NID DB
-  const usersCollection = getCollection("users"); // Real users DB
-
+  const nidCollection = getCollection("nidCollection");
+  const usersCollection = getCollection("users");
   try {
     const { fullName, NIDno, dateOfBirth, email, password, photoUrl } =
       req.body;
+
 
     // 1. NID validation
     const nidData = await nidCollection.findOne({
@@ -31,24 +31,9 @@ const registerUser = async (req, res) => {
     // 2. Check if user already exists
     const existingUser = await usersCollection.findOne({ NIDno });
     if (existingUser) {
-      if (existingUser.isVerified === "approved") {
-        return res
-          .status(400)
-          .json({ message: "You are already registered and approved." });
-      } else if (existingUser.isVerified === "rejected") {
-        return res.status(400).json({
-          message:
-            "Your previous registration was rejected. Please check your NID or required data.",
-        });
-      } else if (existingUser.isVerified === "pending") {
-        return res
-          .status(400)
-          .json({ message: "Your registration is under review." });
-      } else {
-        return res
-          .status(400)
-          .json({ message: "User already exists. Please login." });
-      }
+      return res
+        .status(400)
+        .json({ message: "You are already registered and approved." });
     }
 
     // 3. Hash password
@@ -60,7 +45,7 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       role: "user",
-      isVerified: "pending",
+      isVerified: "verified",
       photoUrl,
       failedAttempts: 0,
       isLocked: false,
@@ -71,7 +56,7 @@ const registerUser = async (req, res) => {
     const result = await usersCollection.insertOne(newUser);
 
     res.status(201).json({
-      message: "User registered successfully and is under review.",
+      message: "User registered successfully ",
       userId: result.insertedId,
     });
   } catch (error) {

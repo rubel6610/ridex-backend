@@ -1,4 +1,4 @@
-const { ObjectId } = require('mongodb');
+
 const { getCollection } = require('../utils/getCollection');
 const bcrypt = require('bcrypt');
 
@@ -18,12 +18,12 @@ const becomeRider = async (req, res) => {
     } = req.body;
 
     // find user
-    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+    const user = await usersCollection.findOne({ _id: userId });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // check if already pending
     const existingRider = await ridersCollection.findOne({
-      userId: new ObjectId(userId),
+      userId: userId,
     });
 
     // check if user already rider
@@ -113,7 +113,7 @@ const getSingleRider = async (req, res) => {
     const risersCollection = getCollection('riders');
 
     const query = {
-      _id: new ObjectId(id),
+      _id: id,
     };
     const singleRider = await risersCollection.findOne(query);
 
@@ -139,14 +139,14 @@ const updateRiderById = async (req, res) => {
     const ridersCollection = getCollection('riders');
 
     const existingRider = await ridersCollection.findOne({
-      _id: new ObjectId(id),
+      _id: id,
     });
     if (!existingRider)
       return res.status(404).json({ message: 'Rider not found' });
 
     // $set will update only the keys provided in the request body
     await ridersCollection.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: id },
       { $set: updateData }
     );
 
@@ -166,13 +166,13 @@ const deleteRiderById = async (req, res) => {
     if (!id) return res.status(400).json({ message: 'Rider ID is required' });
 
     const existingRider = await ridersCollection.findOne({
-      _id: new ObjectId(id),
+      _id: id,
     });
     if (!existingRider) {
       return res.status(404).json({ message: 'Rider not found' });
     }
 
-    const result = await ridersCollection.deleteOne({ _id: new ObjectId(id) });
+    const result = await ridersCollection.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: 'Rider not found' });
