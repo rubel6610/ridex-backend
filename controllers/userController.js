@@ -1,4 +1,4 @@
-const { transporter } = require('../config/email');
+const transporter  = require('../config/email');
 const { getCollection } = require('../utils/getCollection');
 const { ObjectId } = require('mongodb');
 
@@ -260,22 +260,22 @@ const rideRequest = async (req, res) => {
     // TODO: Socket.IO: notify rider in real-time
     // io.to(rider._id.toString()).emit('ride-request', ride);
 
-    // Send email to rider
+    // Send email to rider\
     await transporter.sendMail({
       from: `"RideX Support" <${process.env.EMAIL_USER}>`,
       to: rider.email,
       subject: 'New Ride Request',
       html: `
-        <h2>New Ride Request</h2>
-        <p>Hello ${rider.fullName || 'Rider'},</p>
-        <p>You have a new ride request from user ${userId}.</p>
-        <ul>
-          <li><strong>Pickup:</strong> ${pickup.coordinates.join(', ')}</li>
-          <li><strong>Drop:</strong> ${drop.coordinates.join(', ')}</li>
-          <li><strong>Fare:</strong> ${fare}</li>
-        </ul>
-        <p>Please check your dashboard or app to accept or reject this request.</p>
-      `,
+    <h2>New Ride Request</h2>
+    <p>Hello ${rider.fullName || 'Rider'},</p>
+    <p>You have a new ride request from user ${userId}.</p>
+    <ul>
+      <li><strong>Pickup:</strong> ${pickup.coordinates.join(', ')}</li>
+      <li><strong>Drop:</strong> ${drop.coordinates.join(', ')}</li>
+      <li><strong>Fare:</strong> ${fare}</li>
+    </ul>
+    <p>Please check your dashboard or app to accept or reject this request.</p>
+  `,
     });
 
     // Response to frontend

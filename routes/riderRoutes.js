@@ -7,6 +7,7 @@ const {
   updateRiderById,
   deleteRiderById,
   requestStatus,
+  setStatusOffline,
   updateLocation,
 } = require('../controllers/ridersController');
 
@@ -18,6 +19,7 @@ router.delete('/delete-rider/:id', deleteRiderById);
 
 
 router.post('/status', requestStatus);
+router.post('/status/offline', setStatusOffline);
 router.post('/location', updateLocation);
 
 module.exports = router;
