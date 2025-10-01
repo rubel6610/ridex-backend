@@ -2,6 +2,7 @@ const { ObjectId } = require('mongodb');
 const { getCollection } = require('../utils/getCollection');
 const bcrypt = require('bcrypt');
 
+// RIDERS INITIAL AND REGISTER CONTROLLERS:
 // POST: Become a rider with password validation
 const becomeRider = async (req, res) => {
   try {
@@ -101,7 +102,7 @@ const getRiders = async (req, res) => {
   }
 };
 
-// GET: Get single rider by ID
+// GET: Get single rider by rider ID
 const getSingleRider = async (req, res) => {
   try {
     const { id } = req.params;
@@ -112,10 +113,9 @@ const getSingleRider = async (req, res) => {
 
     const risersCollection = getCollection('riders');
 
-    const query = {
+    const singleRider = await risersCollection.findOne({
       _id: new ObjectId(id),
-    };
-    const singleRider = await risersCollection.findOne(query);
+    });
 
     if (!singleRider) {
       return res.status(404).json({ message: 'Rider not found' });
@@ -125,6 +125,49 @@ const getSingleRider = async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching user:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET: get single rider by userId
+const getSingleRiderByUserID = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    const ridersCollection = getCollection("riders");
+    const rider = await ridersCollection.findOne({ userId: userId });
+
+    if (!rider) {
+      return res.status(404).json({ message: "Rider not found" });
+    }
+
+    res.json(rider);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// POST: Insert many riders
+const insertRiders = async (req, res) => {
+  try {
+    const ridersCollection = getCollection('riders');
+
+    const docs = req.body;
+    if (!Array.isArray(docs) || docs.length === 0) {
+      return res.status(400).json({ message: 'Provide an array of documents' });
+    }
+
+    const result = await ridersCollection.insertMany(docs);
+    res.json({
+      message: `Inserted ${result.insertedCount} documents into riders collection`,
+      insertedIds: result.insertedIds,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -185,10 +228,83 @@ const deleteRiderById = async (req, res) => {
   }
 };
 
+// DELETE: Delete full collection
+const deleteAll = async (req, res) => {
+  try {
+    const DeleteCollection = getCollection('riders');
+
+    const result = await DeleteCollection.deleteMany({});
+    res.json({
+      message: `Deleted ${result.deletedCount} documents from riders collection`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// RIDERS RIDING PROCESS CONTROLLERS:
+// POST: update rider status by userId
+const requestStatus = async (req, res) => {
+  try {
+    const ridersCollection = getCollection("riders");
+    const { userId, status } = req.body; // online/offline
+
+    const result = await ridersCollection.updateOne(
+      { userId: userId },         // userId দিয়ে খুঁজছি
+      { $set: { status } }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Rider status updated successfully!",
+      result,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// POST: update rider location by userId
+const updateLocation = async (req, res) => {
+  try {
+    const ridersCollection = getCollection("riders");
+    const { userId, longitude, latitude } = req.body;
+
+    const updatedDoc = {
+      location: {
+        type: "Point",
+        coordinates: [longitude, latitude],
+      },
+      lastUpdated: new Date(),
+    };
+
+    const result = await ridersCollection.updateOne(
+      { userId: userId },                 // userId দিয়ে খুঁজছি
+      { $set: updatedDoc }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Rider current location updated successfully!",
+      result,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   becomeRider,
   getRiders,
   getSingleRider,
+  getSingleRiderByUserID,
+  insertRiders,
   deleteRiderById,
   updateRiderById,
+  requestStatus,
+  updateLocation,
+  deleteAll,
 };
