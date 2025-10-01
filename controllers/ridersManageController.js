@@ -1,5 +1,4 @@
 
-const { ObjectId } = require("mongodb");
 const { getCollection } = require("../utils/getCollection");
 
 // PATCH: Approve or Reject Rider
@@ -19,7 +18,7 @@ const approveAndRejectRider = async (req, res) => {
         .json({ message: 'Status must be either "approved" or "rejected"' });
     }
 
-    const rider = await ridersCollection.findOne({ _id: new ObjectId(id) });
+    const rider = await ridersCollection.findOne({ _id: id });
     if (!rider) {
       return res.status(404).json({ message: "Rider not found" });
     }

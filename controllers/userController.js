@@ -10,12 +10,12 @@ const getAllNIds = async (req, res) => {
 
     const users = await nidCollection.find().toArray();
 
-    res.status(200).json(users);
+   res.status(200).json(users);
   } catch (error) {
     console.error('❌ Error fetching users:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};
+}
 
 // GET: Get all users
 const getAllUsers = async (req, res) => {
@@ -100,6 +100,27 @@ const updateUser = async (req, res) => {
   } catch (error) {
     console.error('❌ Error updating user:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET: Get message from users
+const getMessagedUsers = async (req, res) => {
+  try {
+    const messageCollection = getCollection('messages');
+    const userCollection = getCollection('users');
+
+    // Get unique senderIds who sent a message
+    const senderIds = await messageCollection.distinct('senderId');
+
+    // Get user details for those senderIds
+    const users = await userCollection
+      .find({ _id: { $in: senderIds }, role: 'user' })
+      .toArray();
+
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to load users' });
   }
 };
 
@@ -256,7 +277,8 @@ module.exports = {
   getSingleUser,
   insertUsers,
   updateUser,
+  getMessagedUsers,
   deleteUser,
   deleteAll,
   rideRequest,
-};
+}
