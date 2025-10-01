@@ -1,5 +1,5 @@
 const { getCollection } = require("../utils/getCollection");
-const { ObjectId } = require("mongodb");
+
 
 // GET: Get all users
 const getAllUsers = async (req, res) => {
@@ -51,7 +51,7 @@ const updateUser = async (req, res) => {
     const usersCollection = getCollection("users");
 
     const result = await usersCollection.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: id },
       { $set: updatedData }
     );
 
@@ -77,7 +77,7 @@ const deleteUser = async (req, res) => {
 
     const usersCollection = getCollection("users");
 
-    const result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
+    const result = await usersCollection.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: "User not found" });
@@ -90,9 +90,34 @@ const deleteUser = async (req, res) => {
   }
 };
 
+
+
+const getMessagedUsers = async (req, res) => {
+  try {
+    const messageCollection = getCollection("messages");
+    const userCollection = getCollection("users");
+
+    // Get unique senderIds who sent a message
+    const senderIds = await messageCollection.distinct("senderId");
+
+    // Get user details for those senderIds
+    const users = await userCollection
+      .find({ _id: { $in: senderIds }, role: "user" })
+      .toArray();
+
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to load users" });
+  }
+};
+
+
+
 module.exports = {
   getAllUsers,
   getSingleUser,
   updateUser,
   deleteUser,
+  getMessagedUsers
 };
