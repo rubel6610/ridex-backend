@@ -10,12 +10,12 @@ const getAllNIds = async (req, res) => {
 
     const users = await nidCollection.find().toArray();
 
-   res.status(200).json(users);
+    res.status(200).json(users);
   } catch (error) {
     console.error('❌ Error fetching users:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}
+};
 
 // GET: Get all users
 const getAllUsers = async (req, res) => {
@@ -54,10 +54,34 @@ const getSingleUser = async (req, res) => {
   }
 };
 
+// GET: Get single user by userId
+const getSingleRiderByUserId = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'userId required' });
+    }
+
+    const ridersCollection = getCollection('riders');
+    const query = { userId }; // userId দিয়ে খুঁজছি
+    const singleRider = await ridersCollection.findOne(query);
+
+    if (!singleRider) {
+      return res.status(404).json({ message: 'Rider not found' });
+    }
+
+    res.status(200).json(singleRider);
+  } catch (error) {
+    console.error('❌ Error fetching rider:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // POST: Insert many users
 const insertUsers = async (req, res) => {
-   try {
-    const usersCollection = getCollection('users'); 
+  try {
+    const usersCollection = getCollection('users');
 
     const docs = req.body;
     if (!Array.isArray(docs) || docs.length === 0) {
@@ -275,10 +299,11 @@ module.exports = {
   getAllNIds,
   getAllUsers,
   getSingleUser,
+  getSingleRiderByUserId,
   insertUsers,
   updateUser,
   getMessagedUsers,
   deleteUser,
   deleteAll,
   rideRequest,
-}
+};
