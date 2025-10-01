@@ -151,6 +151,7 @@ const rideRequest = async (req, res) => {
     const ridesCollection = getCollection('rides');
 
     const { userId, pickup, drop, vehicleType, fare } = req.body;
+    console.log(userId, pickup, drop, vehicleType, fare);
 
     // Validate input
     if (!userId || !pickup || !drop || !vehicleType || !fare) {
