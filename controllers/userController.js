@@ -1,5 +1,5 @@
+const { ObjectId } = require("mongodb");
 const { getCollection } = require("../utils/getCollection");
-
 
 // GET: Get all users
 const getAllUsers = async (req, res) => {
@@ -51,7 +51,7 @@ const updateUser = async (req, res) => {
     const usersCollection = getCollection("users");
 
     const result = await usersCollection.updateOne(
-      { _id: id },
+      { $or: [{ _id: id }, { _id: new ObjectId(id) }] },
       { $set: updatedData }
     );
 
@@ -77,7 +77,7 @@ const deleteUser = async (req, res) => {
 
     const usersCollection = getCollection("users");
 
-    const result = await usersCollection.deleteOne({ _id: id });
+    const result = await usersCollection.deleteOne({ $or: [{ _id: id }, { _id: new ObjectId(id) }] });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: "User not found" });
@@ -89,8 +89,6 @@ const deleteUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 const getMessagedUsers = async (req, res) => {
   try {
@@ -112,12 +110,10 @@ const getMessagedUsers = async (req, res) => {
   }
 };
 
-
-
 module.exports = {
   getAllUsers,
   getSingleUser,
   updateUser,
   deleteUser,
-  getMessagedUsers
+  getMessagedUsers,
 };
