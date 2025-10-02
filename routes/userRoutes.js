@@ -10,7 +10,6 @@ getSingleRiderByUserId,
   getMessagedUsers,
   deleteUser,
   deleteAll,
-  rideRequest,
 } = require('../controllers/userController');
 
 router.get('/nids', getAllNIds);
@@ -22,6 +21,5 @@ router.get("/users/messaged", getMessagedUsers);
 router.put("/user/:id", updateUser);
 router.delete("/user/:id", deleteUser);
 router.delete('/delete-all', deleteAll);
-router.post('/request', rideRequest);
 
 module.exports = router;

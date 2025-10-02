@@ -181,106 +181,6 @@ const deleteRiderById = async (req, res) => {
   }
 };
 
-// RIDER RIDE BOOKING RELATED APIS
-// POST: update rider status by rideId
-const requestStatus = async (req, res) => {
-  try {
-    const ridersCollection = getCollection('riders');
-    const { riderId, status } = req.body; // online/offline
-
-    if (!riderId || !status) {
-      return res
-        .status(400)
-        .json({ message: 'riderId and status are required' });
-    }
-
-    const result = await ridersCollection.updateOne(
-      { _id: riderId }, // riderId দিয়ে খুঁজছি
-      { $set: { status } }
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Rider status updated successfully!',
-      result,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-// POST: update rider status offline on logout
-const setStatusOffline = async (req, res) => {
-  try {
-    const ridersCollection = getCollection('riders');
-    const { userId } = req.body;
-
-    if (!userId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'userId is required' });
-    }
-
-    const result = await ridersCollection.updateOne(
-      { userId },
-      { $set: { status: 'offline' } }
-    );
-
-    if (result.matchedCount === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Rider not found' });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Rider status set to offline successfully!',
-      result,
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: 'Server error', error: error.message });
-  }
-};
-
-// POST: update rider location by riderId
-const updateLocation = async (req, res) => {
-  try {
-    const ridersCollection = getCollection('riders');
-    const { riderId, longitude, latitude } = req.body;
-
-    if (!riderId || !longitude || !latitude) {
-      return res
-        .status(400)
-        .json({ message: 'riderId, longitude, latitude are required' });
-    }
-
-    const updatedDoc = {
-      location: {
-        type: 'Point',
-        coordinates: [longitude, latitude],
-      },
-      lastUpdated: new Date(),
-    };
-
-    const result = await ridersCollection.updateOne(
-      { _id: riderId }, // riderId দিয়ে খুঁজছি
-      { $set: updatedDoc }
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Rider current location updated successfully!',
-      result,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
 
 module.exports = {
   becomeRider,
@@ -288,7 +188,4 @@ module.exports = {
   getSingleRider,
   deleteRiderById,
   updateRiderById,
-  requestStatus,
-  setStatusOffline,
-  updateLocation,
 };
