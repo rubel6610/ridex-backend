@@ -10,10 +10,10 @@ const authRoutes = require('./routes/authRoutes');
 const riderRoutes = require('./routes/riderRoutes');
 const userManageRoutes = require('./routes/userManageRoutes');
 const riderManageRoutes = require('./routes/riderManageRoutes');
+const rideRoutes = require('./routes/rideRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 
-const { initSocket } = require('./socket/socket');
-const { getCollection } = require('./utils/getCollection');
+const { initSocket } = require('./socket/socket');  
 
 const app = express();
 const server = http.createServer(app);
@@ -33,6 +33,7 @@ app.use('/api', userRoutes);
 app.use('/api', riderRoutes);
 app.use('/api', userManageRoutes);
 app.use('/api', riderManageRoutes);
+app.use('/api', rideRoutes);
 app.use('/api', chatRoutes);
 
 // Start server
@@ -44,7 +45,7 @@ const PORT = process.env.PORT || 5000;
     // riders collection 2dsphere index create
     // const ridersCollection = getCollection('riders');
     // await ridersCollection.createIndex({ location: '2dsphere' });
-    
+
     // console.log('✅ 2dsphere index created on riders.location');
     server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   } catch (err) {

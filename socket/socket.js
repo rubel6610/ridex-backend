@@ -1,40 +1,31 @@
+const socketIO = require('socket.io');
 
-// utils/socket.js
-let io = null;
+let io;
+const initSocket = (server)=>{
+    io=socketIO(server,{
+        cors:{
+            origin:process.env.CLIENT_URL,
+            methods:["GET","POST","PATCH","DELETE"]
+        }
+    })
+    io.on("connection",(socket)=>{
+        console.log("user connected",socket.id);
+        socket.on("joinRoom", (roomId)=>{
+            socket.join(roomId);
+            console.log(`socket ${socket.id} joined room ${roomId}`)
+        })
+        socket.on("disconnect", ()=>{
+            console.log("user disconnected", socket.id);
+        })
+    })
+    return io;
+}
 
-function initSocket(server) {
-  const { Server } = require('socket.io');
-  io = new Server(server, {
-    cors: {
-      origin: process.env.CLIENT_URL || '*',
-      methods: ['GET','POST']
+const getIO=()=>{
+    if(!io){
+        throw new Error('Socket.io is not initialized')
     }
-  });
-
-  io.on('connection', socket => {
-    console.log('socket connected', socket.id);
-
-    socket.on('join_user', userId => {
-      socket.join(`user_${userId}`);
-      console.log('user joined room', `user_${userId}`);
-    });
-
-    socket.on('join_admin', adminId => {
-      socket.join('admins');
-      console.log('an admin joined admins room:', adminId || socket.id);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('socket disconnected', socket.id);
-    });
-  });
-
-  return io;
+    return io;
 }
 
-function getIO() {
-  if (!io) throw new Error('Socket.io not initialized');
-  return io;
-}
-
-module.exports = { initSocket, getIO };
+module.exports={initSocket,getIO}

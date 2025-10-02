@@ -1,12 +1,12 @@
-const { ObjectId } = require('mongodb');
-const { getCollection } = require('../utils/getCollection');
-const bcrypt = require('bcrypt');
+const { ObjectId } = require("mongodb");
+const { getCollection } = require("../utils/getCollection");
+const bcrypt = require("bcrypt");
 
 // POST: Become a rider with password validation
 const becomeRider = async (req, res) => {
   try {
-    const ridersCollection = getCollection('riders');
-    const usersCollection = getCollection('users');
+    const ridersCollection = getCollection("riders");
+    const usersCollection = getCollection("users");
     const {
       userId,
       password,
@@ -17,31 +17,31 @@ const becomeRider = async (req, res) => {
       drivingLicense,
     } = req.body;
 
-    // find user
-    const user = await usersCollection.findOne( { $or: [{ _id: userId }, { _id: new ObjectId(userId) }] },);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    // check if already pending
-    const existingRider = await ridersCollection.findOne({
-      userId: userId,
+    // find user by ID
+    const user = await usersCollection.findOne({
+      $or: [{ _id: new ObjectId(userId) }, { _id: userId }],
     });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    // check if user already rider
-    if (user.role === 'rider') {
-      return res.status(400).json({ message: 'You are already a rider' });
+    // check if already rider
+    if (user.role === "rider") {
+      return res.status(400).json({ message: "You are already a rider" });
     }
 
     // check if user already requested to be a rider
-    if (existingRider && user.role === 'user') {
+    const existingRider = await ridersCollection.findOne({
+      userId: userId,
+    });
+    if (existingRider && user.role === "user") {
       return res
         .status(400)
-        .json({ message: 'Your rider request is already under review' });
+        .json({ message: "Your rider request is already under review" });
     }
 
     // validate password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid password' });
+      return res.status(401).json({ message: "Invalid password" });
     }
 
     // hash password again for riders collection
@@ -49,21 +49,20 @@ const becomeRider = async (req, res) => {
 
     // create rider profile
     const riderData = {
-      userId: user._id,
+      userId: user._id.toString(),
       fullName: user.fullName,
+      gender: user.gender,
       dateOfBirth: user.dateOfBirth,
       email: user.email,
       emergency_contact: user.phoneNumber,
-      present_address,
+      present_address: present_address || user.present_address,
       vehicleType,
       vehicleModel,
       vehicleRegisterNumber,
       drivingLicense,
       password: hashedPassword,
-      status: 'offline', // offline / online / on-trip
-       location: req.body.location
-    ? { type: "Point", coordinates: req.body.location }
-    : undefined,
+      status: "offline",
+      location: null,
       ongoingTripId: null,
       lastUpdated: null,
       createdAt: new Date(),
@@ -74,29 +73,27 @@ const becomeRider = async (req, res) => {
     // update user present_address if changed
     if (present_address) {
       await usersCollection.updateOne(
-        { _id: user._id },
+        { _id: new ObjectId(user._id) },
         { $set: { present_address } }
       );
     }
 
-    res.status(201).json({ message: 'Rider request submitted!' });
+    res.status(201).json({ message: "Rider request submitted!" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 // GET: Get all riders
 const getRiders = async (req, res) => {
   try {
-    const ridersCollection = getCollection('riders');
-
+    const ridersCollection = getCollection("riders");
     const riders = await ridersCollection.find().toArray();
-
     res.status(200).json({ riders });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -106,24 +103,22 @@ const getSingleRider = async (req, res) => {
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ message: 'Id is required' });
+      return res.status(400).json({ message: "Id is required" });
     }
 
-    const risersCollection = getCollection('riders');
+    const ridersCollection = getCollection("riders");
 
-    const query = {
-      _id: id,
-    };
-    const singleRider = await risersCollection.findOne(query);
+    const query = { $or: [{ _id: new ObjectId(id) }, { _id: id }] };
+    const singleRider = await ridersCollection.findOne(query);
 
     if (!singleRider) {
-      return res.status(404).json({ message: 'Rider not found' });
+      return res.status(404).json({ message: "Rider not found" });
     }
 
     res.status(200).json(singleRider);
   } catch (error) {
-    console.error('❌ Error fetching user:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("❌ Error fetching rider:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -133,25 +128,27 @@ const updateRiderById = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    if (!id) return res.status(400).json({ message: 'Id is required' });
+    if (!id) return res.status(400).json({ message: "Id is required" });
 
-    const ridersCollection = getCollection('riders');
+    const ridersCollection = getCollection("riders");
 
     const existingRider = await ridersCollection.findOne({
-      _id: id,
+      $or: [{ _id: new ObjectId(id) }, { _id: id }],
     });
     if (!existingRider)
-      return res.status(404).json({ message: 'Rider not found' });
+      return res.status(404).json({ message: "Rider not found" });
 
-    // $set will update only the keys provided in the request body
-    await ridersCollection.updateOne({ _id: id }, { $set: updateData });
+    await ridersCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
 
     res.status(200).json({
-      message: 'Rider updated successfully',
+      message: "Rider updated successfully",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -159,126 +156,29 @@ const updateRiderById = async (req, res) => {
 const deleteRiderById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ message: 'Rider ID is required' });
+    if (!id) return res.status(400).json({ message: "Rider ID is required" });
+
+    const ridersCollection = getCollection("riders");
 
     const existingRider = await ridersCollection.findOne({
-      _id: id,
+      $or: [{ _id: new ObjectId(id) }, { _id: id }],
     });
     if (!existingRider) {
-      return res.status(404).json({ message: 'Rider not found' });
+      return res.status(404).json({ message: "Rider not found" });
     }
 
-    const result = await ridersCollection.deleteOne({ _id: id });
+    const result = await ridersCollection.deleteOne({
+      _id: new ObjectId(id),
+    });
 
     if (result.deletedCount === 0) {
-      return res.status(404).json({ message: 'Rider not found' });
+      return res.status(404).json({ message: "Rider not found" });
     }
 
-    res.status(200).json({ message: 'Rider deleted successfully' });
+    res.status(200).json({ message: "Rider deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-// RIDER RIDE BOOKING RELATED APIS
-// POST: update rider status by rideId
-const requestStatus = async (req, res) => {
-  try {
-    const ridersCollection = getCollection('riders');
-    const { riderId, status } = req.body; // online/offline
-
-    if (!riderId || !status) {
-      return res
-        .status(400)
-        .json({ message: 'riderId and status are required' });
-    }
-
-    const result = await ridersCollection.updateOne(
-      { _id: riderId }, // riderId দিয়ে খুঁজছি
-      { $set: { status } }
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Rider status updated successfully!',
-      result,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-// POST: update rider status offline on logout
-const setStatusOffline = async (req, res) => {
-  try {
-    const ridersCollection = getCollection('riders');
-    const { userId } = req.body;
-
-    if (!userId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'userId is required' });
-    }
-
-    const result = await ridersCollection.updateOne(
-      { userId },
-      { $set: { status: 'offline' } }
-    );
-
-    if (result.matchedCount === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Rider not found' });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Rider status set to offline successfully!',
-      result,
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: 'Server error', error: error.message });
-  }
-};
-
-// POST: update rider location by riderId
-const updateLocation = async (req, res) => {
-  try {
-    const ridersCollection = getCollection('riders');
-    const { riderId, longitude, latitude } = req.body;
-
-    if (!riderId || !longitude || !latitude) {
-      return res
-        .status(400)
-        .json({ message: 'riderId, longitude, latitude are required' });
-    }
-
-    const updatedDoc = {
-      location: {
-        type: 'Point',
-        coordinates: [longitude, latitude],
-      },
-      lastUpdated: new Date(),
-    };
-
-    const result = await ridersCollection.updateOne(
-      { _id: riderId }, // riderId দিয়ে খুঁজছি
-      { $set: updatedDoc }
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Rider current location updated successfully!',
-      result,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -288,7 +188,4 @@ module.exports = {
   getSingleRider,
   deleteRiderById,
   updateRiderById,
-  requestStatus,
-  setStatusOffline,
-  updateLocation,
 };
