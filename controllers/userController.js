@@ -1,4 +1,4 @@
-const { transporter } = require('../config/email');
+const transporter  = require('../config/email');
 const { getCollection } = require('../utils/getCollection');
 const { ObjectId } = require('mongodb');
 
@@ -10,12 +10,12 @@ const getAllNIds = async (req, res) => {
 
     const users = await nidCollection.find().toArray();
 
-   res.status(200).json(users);
+    res.status(200).json(users);
   } catch (error) {
     console.error('❌ Error fetching users:', error);
     res.status(500).json({ message: 'Server error' });
   }
-}
+};
 
 // GET: Get all users
 const getAllUsers = async (req, res) => {
@@ -54,10 +54,34 @@ const getSingleUser = async (req, res) => {
   }
 };
 
+// GET: Get single user by userId
+const getSingleRiderByUserId = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'userId required' });
+    }
+
+    const ridersCollection = getCollection('riders');
+    const query = { userId }; // userId দিয়ে খুঁজছি
+    const singleRider = await ridersCollection.findOne(query);
+
+    if (!singleRider) {
+      return res.status(404).json({ message: 'Rider not found' });
+    }
+
+    res.status(200).json(singleRider);
+  } catch (error) {
+    console.error('❌ Error fetching rider:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // POST: Insert many users
 const insertUsers = async (req, res) => {
-   try {
-    const usersCollection = getCollection('users'); 
+  try {
+    const usersCollection = getCollection('users');
 
     const docs = req.body;
     if (!Array.isArray(docs) || docs.length === 0) {
@@ -236,22 +260,22 @@ const rideRequest = async (req, res) => {
     // TODO: Socket.IO: notify rider in real-time
     // io.to(rider._id.toString()).emit('ride-request', ride);
 
-    // Send email to rider
+    // Send email to rider\
     await transporter.sendMail({
       from: `"RideX Support" <${process.env.EMAIL_USER}>`,
       to: rider.email,
       subject: 'New Ride Request',
       html: `
-        <h2>New Ride Request</h2>
-        <p>Hello ${rider.fullName || 'Rider'},</p>
-        <p>You have a new ride request from user ${userId}.</p>
-        <ul>
-          <li><strong>Pickup:</strong> ${pickup.coordinates.join(', ')}</li>
-          <li><strong>Drop:</strong> ${drop.coordinates.join(', ')}</li>
-          <li><strong>Fare:</strong> ${fare}</li>
-        </ul>
-        <p>Please check your dashboard or app to accept or reject this request.</p>
-      `,
+    <h2>New Ride Request</h2>
+    <p>Hello ${rider.fullName || 'Rider'},</p>
+    <p>You have a new ride request from user ${userId}.</p>
+    <ul>
+      <li><strong>Pickup:</strong> ${pickup.coordinates.join(', ')}</li>
+      <li><strong>Drop:</strong> ${drop.coordinates.join(', ')}</li>
+      <li><strong>Fare:</strong> ${fare}</li>
+    </ul>
+    <p>Please check your dashboard or app to accept or reject this request.</p>
+  `,
     });
 
     // Response to frontend
@@ -275,10 +299,11 @@ module.exports = {
   getAllNIds,
   getAllUsers,
   getSingleUser,
+  getSingleRiderByUserId,
   insertUsers,
   updateUser,
   getMessagedUsers,
   deleteUser,
   deleteAll,
   rideRequest,
-}
+};
