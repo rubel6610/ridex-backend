@@ -2,6 +2,20 @@ const { getCollection } = require('../utils/getCollection');
 const transporter = require('../config/email');
 
 // RIDERS RIDE RELATED CONTROLLERS:
+// GET: Get all rides here
+const getAllRides = async(req, res) => {
+  try {
+    const ridesCollection = getCollection('rides');
+
+    const rides = await ridesCollection.find().toArray();
+
+    res.status(200).json(rides);
+  } catch (error) {
+    console.error('❌ Error fetching rides:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 // POST: update rider status by rideId
 const requestStatus = async (req, res) => {
   try {
@@ -211,6 +225,7 @@ const rideRequest = async (req, res) => {
 };
 
 module.exports = {
+  getAllRides,
   requestStatus,
   setStatusOffline,
   updateLocation,
