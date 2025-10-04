@@ -1,4 +1,3 @@
-const { ObjectId } = require("mongodb");
 const { getCollection } = require("../utils/getCollection");
 
 // PATCH: Approve or Reject user
@@ -18,7 +17,7 @@ const approveAndrejectUser = async (req, res) => {
         .json({ message: 'Status must be either "approved" or "rejected"' });
     }
 
-    const user = await usersCollection.findOne({ $or: [{ _id: id }, { _id: new ObjectId(id) }] },);
+    const user = await usersCollection.findOne({ _id: id });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -28,7 +27,7 @@ const approveAndrejectUser = async (req, res) => {
     }
 
     await usersCollection.updateOne(
-      { $or: [{ _id: id }, { _id: new ObjectId(id) }] },
+      { _id: id },
       { $set: { isVerified: status } }
     );
 

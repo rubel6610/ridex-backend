@@ -1,31 +1,33 @@
+// socket/socket.js
+const { Server } = require("socket.io");
 
-// utils/socket.js
-let io = null;
+let io;
 
 function initSocket(server) {
-  const { Server } = require('socket.io');
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || '*',
-      methods: ['GET','POST']
-    }
+      origin: "*", // frontend domain দাও
+      methods: ["GET", "POST"]
+    },
   });
 
-  io.on('connection', socket => {
-    console.log('socket connected', socket.id);
+  io.on("connection", (socket) => {
+    console.log("⚡ New socket connected:", socket.id);
 
-    socket.on('join_user', userId => {
+    // ইউজার join করবে
+    socket.on("register_user", (userId) => {
       socket.join(`user_${userId}`);
-      console.log('user joined room', `user_${userId}`);
+      console.log(`👤 User ${userId} joined room user_${userId}`);
     });
 
-    socket.on('join_admin', adminId => {
-      socket.join('admins');
-      console.log('an admin joined admins room:', adminId || socket.id);
+    // এডমিন join করবে
+    socket.on("register_admin", () => {
+      socket.join("admins");
+      console.log("🛡️ Admin joined admins room");
     });
 
-    socket.on('disconnect', () => {
-      console.log('socket disconnected', socket.id);
+    socket.on("disconnect", () => {
+      console.log("❌ Disconnected:", socket.id);
     });
   });
 
@@ -33,7 +35,6 @@ function initSocket(server) {
 }
 
 function getIO() {
-  if (!io) throw new Error('Socket.io not initialized');
   return io;
 }
 
