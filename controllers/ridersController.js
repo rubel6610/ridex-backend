@@ -1,3 +1,4 @@
+const { ObjectId } = require('mongodb');
 const { getCollection } = require('../utils/getCollection');
 const bcrypt = require('bcrypt');
 
@@ -17,7 +18,7 @@ const becomeRider = async (req, res) => {
     } = req.body;
 
     // find user
-    const user = await usersCollection.findOne({ _id: userId });
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // check if already pending
@@ -62,7 +63,7 @@ const becomeRider = async (req, res) => {
       status: 'offline', // offline / online / on-trip
       location: {
         type: 'Point',
-        coordinates: [null, null],
+        coordinatnes: [null, null],
       },
       ongoingTripId: null,
       lastUpdated: null,
