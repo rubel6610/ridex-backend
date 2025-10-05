@@ -128,6 +128,27 @@ const getSingleRider = async (req, res) => {
   }
 };
 
+// POST: Insert many riders
+const insertRiders = async (req, res) => {
+  try {
+    const ridersCollection = getCollection('riders');
+
+    const docs = req.body;
+    if (!Array.isArray(docs) || docs.length === 0) {
+      return res.status(400).json({ message: 'Provide an array of documents' });
+    }
+
+    const result = await ridersCollection.insertMany(docs);
+    res.json({
+      message: `Inserted ${result.insertedCount} documents into riders collection`,
+      insertedIds: result.insertedIds,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // PUT: Update rider by ID
 const updateRiderById = async (req, res) => {
   try {
@@ -182,11 +203,27 @@ const deleteRiderById = async (req, res) => {
   }
 };
 
+// DELETE: Delete full collection
+const deleteAll = async (req, res) => {
+  try {
+    const DeleteCollection = getCollection('riders');
+
+    const result = await DeleteCollection.deleteMany({});
+    res.json({
+      message: `Deleted ${result.deletedCount} documents from riders collection`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 module.exports = {
   becomeRider,
   getRiders,
   getSingleRider,
+  insertRiders,
   deleteRiderById,
   updateRiderById,
+  deleteAll,
 };
