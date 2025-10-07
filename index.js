@@ -33,6 +33,7 @@ app.use('/api', riderRoutes);
 app.use('/api', userManageRoutes);
 app.use('/api', riderManageRoutes);
 app.use('/api', rideRoutes);
+app.use('/api', rideRoutes);
 app.use('/support',supportRoutes)
 
 // Start server

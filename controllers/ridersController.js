@@ -1,4 +1,4 @@
-const { ObjectId } = require("mongodb");
+const { ObjectId } = require('mongodb');
 const { getCollection } = require("../utils/getCollection");
 const bcrypt = require("bcrypt");
 
@@ -19,7 +19,7 @@ const becomeRider = async (req, res) => {
 
     // find user by ID
     const user = await usersCollection.findOne({
-      $or: [{ _id: new ObjectId(userId) }, { _id: userId }],
+      $or: [{ _id: new ObjectId(new ObjectId(userId)) }, { _id: userId }],
     });
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -178,6 +178,22 @@ const deleteRiderById = async (req, res) => {
     res.status(200).json({ message: "Rider deleted successfully" });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// DELETE: Delete full collection
+const deleteAll = async (req, res) => {
+  try {
+    const DeleteCollection = getCollection('riders');
+
+    const result = await DeleteCollection.deleteMany({});
+    res.json({
+      message: `Deleted ${result.deletedCount} documents from riders collection`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -188,4 +204,5 @@ module.exports = {
   getSingleRider,
   deleteRiderById,
   updateRiderById,
+  deleteAll,
 };
