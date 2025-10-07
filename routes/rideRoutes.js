@@ -13,7 +13,7 @@ const {
 
 // COMMON NEED
 router.get('/rides', getAllRides);
-router.get('/rides/:riderId', getInstantRide);
+router.get('/rides/:rideId', getInstantRide);
 
 // FROM RIDER
 router.post('/status', requestStatus);

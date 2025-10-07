@@ -103,7 +103,6 @@ const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedData = req.body;
-
     if (!id) {
       return res.status(400).json({ message: 'id is required' });
     }
@@ -111,7 +110,7 @@ const updateUser = async (req, res) => {
     const usersCollection = getCollection('users');
 
     const result = await usersCollection.updateOne(
-      { _id: new ObjectId(id) },
+      {$or:[{_id: new ObjectId(id)},{_id:id}]  },
       { $set: updatedData }
     );
 

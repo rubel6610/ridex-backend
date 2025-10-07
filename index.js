@@ -11,8 +11,7 @@ const riderRoutes = require('./routes/riderRoutes');
 const userManageRoutes = require('./routes/userManageRoutes');
 const riderManageRoutes = require('./routes/riderManageRoutes');
 const rideRoutes = require('./routes/rideRoutes');
-const chatRoutes = require('./routes/chatRoutes');
-
+const supportRoutes = require('./routes/supportRoutes');
 const { initSocket } = require('./socket/socket');  
 
 const app = express();
@@ -34,7 +33,8 @@ app.use('/api', riderRoutes);
 app.use('/api', userManageRoutes);
 app.use('/api', riderManageRoutes);
 app.use('/api', rideRoutes);
-app.use('/api', chatRoutes);
+app.use('/api', rideRoutes);
+app.use('/support',supportRoutes)
 
 // Start server
 const PORT = process.env.PORT || 5000;
