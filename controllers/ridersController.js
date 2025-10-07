@@ -1,5 +1,4 @@
 const { ObjectId } = require('mongodb');
-const { ObjectId } = require("mongodb");
 const { getCollection } = require("../utils/getCollection");
 const bcrypt = require("bcrypt");
 
