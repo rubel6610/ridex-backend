@@ -1,15 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const {
-  getAllNIds,
-  getAllUsers,
-  getSingleUser,
-  getSingleRiderByUserId,
-  insertUsers,
-  updateUser,
-  getMessagedUsers,
-  deleteUser,
-  deleteAll,
+const {getAllNIds,getAllUsers,getSingleUser,getSingleRiderByUserId,insertUsers,updateUser,
+getMessagedUsers,deleteUser,deleteAll,
 } = require('../controllers/userController');
 
 router.get('/nids', getAllNIds);
