@@ -83,9 +83,6 @@ const insertUsers = async (req, res) => {
     const usersCollection = getCollection('users');
 
     const docs = req.body;
-    if (!Array.isArray(docs) || docs.length === 0) {
-      return res.status(400).json({ message: 'Provide an array of documents' });
-    }
 
     const result = await usersCollection.insertMany(docs);
     res.json({
