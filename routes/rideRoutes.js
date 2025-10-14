@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getAllRides,
   getAvailableRide,
+  getCurrentRide,
   requestStatus,
   setStatusOffline,
   updateLocation,
@@ -14,6 +15,8 @@ const {
 // COMMON NEED
 router.get('/rides', getAllRides);
 router.get('/rides/:riderId', getAvailableRide);
+router.get('/ride/:rideId', getCurrentRide);
+
 
 // FROM RIDER
 router.post('/status', requestStatus);

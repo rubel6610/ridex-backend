@@ -80,7 +80,7 @@ const getSingleRiderByUserId = async (req, res) => {
 // POST: Insert many users
 const insertUsers = async (req, res) => {
   try {
-    const usersCollection = getCollection('rides');
+    const usersCollection = getCollection('users');
 
     const docs = req.body;
 
@@ -170,7 +170,7 @@ const deleteUser = async (req, res) => {
 // DELETE: Delete full collection
 const deleteAll = async (req, res) => {
   try {
-    const DeleteCollection = getCollection('rides');
+    const DeleteCollection = getCollection('users');
 
     const result = await DeleteCollection.deleteMany({});
     res.json({
