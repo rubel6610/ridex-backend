@@ -1,0 +1,237 @@
+{
+  "riders": [
+    {
+      "userId": "68ee2e60c4c6b18a88928dc5",
+      "fullName": "Mehedi Hasan",
+      "dateOfBirth": "2002-02-20",
+      "email": "mehedi02@email.com",
+      "emergency_contact": "+8801712345684",
+      "present_address": {
+        "village": "Kallyanpur",
+        "post": "Dhaka",
+        "upazila": "Mirpur",
+        "district": "Dhaka"
+      },
+      "vehicleType": "Car",
+      "vehicleModel": "Toyota Corolla",
+      "vehicleRegisterNumber": "DHAKA-CA-556677",
+      "drivingLicense": "DL-444555666",
+      "password": "$2b$10$Vw.XPKjc26xr/4sYoEOZ1.I7aEzA/y91z4AWXVwmYpEqqdLFDMyTK",
+      "status": "offline",
+      "location": {
+        "type": "Point",
+        "coordinates": [89.3647813, 24.8420031]
+      },
+      "reviews": 0,
+      "ratings": 0,
+      "completedRides": 0,
+      "ongoingTripId": null,
+      "lastUpdated": null,
+      "createdAt": "2025-09-30T18:30:00.000Z"
+    },
+    {
+      "userId": "68ee2e60c4c6b18a88928dc8",
+      "fullName": "Faruk Ahmed",
+      "dateOfBirth": "2005-11-15",
+      "email": "omarfaruk.dev@gmail.com",
+      "emergency_contact": "+8801712345682",
+      "present_address": {
+        "village": "Gulshan",
+        "post": "Dhaka",
+        "upazila": "Gulshan",
+        "district": "Dhaka"
+      },
+      "vehicleType": "Car",
+      "vehicleModel": "Toyota Axio",
+      "vehicleRegisterNumber": "DHAKA-CA-667788",
+      "drivingLicense": "DL-555666777",
+      "password": "$2b$10$Vw.XPKjc26xr/4sYoEOZ1.I7aEzA/y91z4AWXVwmYpEqqdLFDMyTK",
+      "status": "online",
+      "location": {
+        "type": "Point",
+        "coordinates": [90.2099, 24.06]
+      },
+      "reviews": 0,
+      "ratings": 0,
+      "completedRides": 0,
+      "ongoingTripId": null,
+      "lastUpdated": "2025-10-14T10:38:54.636Z",
+      "createdAt": "2025-09-30T18:35:00.000Z"
+    },
+    {
+      "userId": "68ee2e60c4c6b18a88928dc9",
+      "fullName": "Omor Faruk",
+      "dateOfBirth": "2005-11-15",
+      "email": "omarfaruk.pcp@gmail.com",
+      "emergency_contact": "+8801712345682",
+      "present_address": {
+        "village": "Gulshan",
+        "post": "Dhaka",
+        "upazila": "Gulshan",
+        "district": "Dhaka"
+      },
+      "vehicleType": "Car",
+      "vehicleModel": "Toyota Axio",
+      "vehicleRegisterNumber": "DHAKA-CA-667788",
+      "drivingLicense": "DL-555666777",
+      "password": "$2b$10$Vw.XPKjc26xr/4sYoEOZ1.I7aEzA/y91z4AWXVwmYpEqqdLFDMyTK",
+      "status": "offline",
+      "location": {
+        "type": "Point",
+        "coordinates": [89.3570657, 24.845022]
+      },
+      "reviews": 0,
+      "ratings": 0,
+      "completedRides": 0,
+      "ongoingTripId": null,
+      "lastUpdated": "2025-10-12T15:24:25.081Z",
+      "createdAt": "2025-09-30T18:35:00.000Z"
+    },
+    {
+      "userId": "68ee2e60c4c6b18a88928dca",
+      "fullName": "Sifad Islam",
+      "dateOfBirth": "2007-05-20",
+      "email": "sifayed99@gmail.com",
+      "emergency_contact": "+8801712345683",
+      "present_address": {
+        "village": "Mirpur",
+        "post": "Dhaka",
+        "upazila": "Mirpur",
+        "district": "Dhaka"
+      },
+      "vehicleType": "Car",
+      "vehicleModel": "Honda Civic",
+      "vehicleRegisterNumber": "DHAKA-CA-778899",
+      "drivingLicense": "DL-666777888",
+      "password": "$2b$10$Vw.XPKjc26xr/4sYoEOZ1.I7aEzA/y91z4AWXVwmYpEqqdLFDMyTK",
+      "status": "offline",
+      "location": {
+        "type": "Point",
+        "coordinates": [89.3594282, 24.8440028]
+      },
+      "reviews": 0,
+      "ratings": 0,
+      "completedRides": 0,
+      "ongoingTripId": null,
+      "lastUpdated": null,
+      "createdAt": "2025-09-30T18:35:00.000Z"
+    },
+    {
+      "userId": "68ee2e60c4c6b18a88928dc4",
+      "fullName": "Farhana Yeasmin",
+      "dateOfBirth": "2007-12-09",
+      "email": "farhana07@email.com",
+      "emergency_contact": "+8801712345683",
+      "present_address": {
+        "village": "Banani",
+        "post": "Dhaka",
+        "upazila": "Cantonment",
+        "district": "Dhaka"
+      },
+      "vehicleType": "Bike",
+      "vehicleModel": "Suzuki Gixxer",
+      "vehicleRegisterNumber": "DHAKA-MC-223344",
+      "drivingLicense": "DL-333444555",
+      "password": "$2b$10$Vw.XPKjc26xr/4sYoEOZ1.I7aEzA/y91z4AWXVwmYpEqqdLFDMyTK",
+      "status": "offline",
+      "location": {
+        "type": "Point",
+        "coordinates": [89.3729517, 24.8387719]
+      },
+      "reviews": 0,
+      "ratings": 0,
+      "completedRides": 0,
+      "ongoingTripId": null,
+      "lastUpdated": null,
+      "createdAt": "2025-09-30T18:30:00.000Z"
+    },
+    {
+      "userId": "68ee2e60c4c6b18a88928dc1",
+      "fullName": "Rahima Akter",
+      "dateOfBirth": "2006-03-14",
+      "email": "rahima06@email.com",
+      "emergency_contact": "+8801712345679",
+      "present_address": {
+        "village": "Uttara",
+        "post": "Dhaka",
+        "upazila": "Airport",
+        "district": "Dhaka"
+      },
+      "vehicleType": "Car",
+      "vehicleModel": "Toyota Axio",
+      "vehicleRegisterNumber": "DHAKA-CA-445566",
+      "drivingLicense": "DL-987654321",
+      "password": "$2b$10$Vw.XPKjc26xr/4sYoEOZ1.I7aEzA/y91z4AWXVwmYpEqqdLFDMyTK",
+      "status": "offline",
+      "location": {
+        "type": "Point",
+        "coordinates": [89.3608193, 24.8310133]
+      },
+      "reviews": 0,
+      "ratings": 0,
+      "completedRides": 0,
+      "ongoingTripId": null,
+      "lastUpdated": null,
+      "createdAt": "2025-09-30T18:30:00.000Z"
+    },
+    {
+      "userId": "68ee2e60c4c6b18a88928dc2",
+      "fullName": "Tanvir Hasan",
+      "dateOfBirth": "2004-09-21",
+      "email": "tanvir04@email.com",
+      "emergency_contact": "+8801712345680",
+      "present_address": {
+        "village": "Dhanmondi",
+        "post": "Dhaka",
+        "upazila": "New Market",
+        "district": "Dhaka"
+      },
+      "vehicleType": "Car",
+      "vehicleModel": "Toyota Axio",
+      "vehicleRegisterNumber": "DHAKA-CA-445567",
+      "drivingLicense": "DL-987654322",
+      "password": "$2b$10$Vw.XPKjc26xr/4sYoEOZ1.I7aEzA/y91z4AWXVwmYpEqqdLFDMyTK",
+      "status": "offline",
+      "location": {
+        "type": "Point",
+        "coordinates": [89.3651924, 24.8475105]
+      },
+      "reviews": 0,
+      "ratings": 0,
+      "completedRides": 0,
+      "ongoingTripId": null,
+      "lastUpdated": null,
+      "createdAt": "2025-09-30T18:30:00.000Z"
+    },
+    {
+      "userId": "68ee2e60c4c6b18a88928dc3",
+      "fullName": "arfan ahmed rubel",
+      "gender": "female",
+      "dateOfBirth": "2005-07-18",
+      "email": "robiulawalruman@gmail.com",
+      "emergency_contact": "+8801712345681",
+      "present_address": {
+        "village": "Motijheel",
+        "post": "sadf",
+        "upazila": "fasd",
+        "district": "Dhaka"
+      },
+      "vehicleType": "cng",
+      "vehicleModel": "vintage",
+      "vehicleRegisterNumber": "1324809864",
+      "drivingLicense": "94107cae-92b7-4de2-b5d7-0a218c98830e.jpg",
+      "password": "$2b$10$Vw.XPKjc26xr/4sYoEOZ1.I7aEzA/y91z4AWXVwmYpEqqdLFDMyTK",
+      "status": "offline",
+      "location": {
+        "type": "Point",
+        "coordinates": [90.77, 23.05]
+      },
+      "reviews": 0,
+      "ratings": 0,
+      "completedRides": 0,
+      "ongoingTripId": null,
+      "lastUpdated": "2025-10-06T22:45:04.238Z",
+      "createdAt": "2025-10-05T15:34:59.616Z"
+    }
+  ]
+}

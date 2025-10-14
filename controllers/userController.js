@@ -167,12 +167,12 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// DELETE: Delete full collection
-const deleteAll = async (req, res) => {
+// DELETE: Delete all users
+const deleteAllUsers = async (req, res) => {
   try {
-    const DeleteCollection = getCollection('users');
+    const usersCollection = getCollection('users');
 
-    const result = await DeleteCollection.deleteMany({});
+    const result = await usersCollection.deleteMany({});
     res.json({
       message: `Deleted ${result.deletedCount} documents from users collection`,
     });
@@ -191,5 +191,5 @@ module.exports = {
   updateUser,
   getMessagedUsers,
   deleteUser,
-  deleteAll,
+  deleteAllUsers,
 };
