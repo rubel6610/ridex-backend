@@ -4,6 +4,8 @@ const {
   getAllRides,
   getAvailableRide,
   getCurrentRide,
+  insertRides,
+  deleteAllRides,
   requestStatus,
   setStatusOffline,
   updateLocation,
@@ -16,6 +18,8 @@ const {
 router.get('/rides', getAllRides);
 router.get('/rides/:riderId', getAvailableRide);
 router.get('/ride/:rideId', getCurrentRide);
+router.post('/ride/insert-allRides', insertRides);
+router.delete('/ride/delete-allRides', deleteAllRides);
 
 
 // FROM RIDER

@@ -72,6 +72,40 @@ const getCurrentRide = async (req, res) => {
   }
 };
 
+// POST: Insert many rides
+const insertRides = async (req, res) => {
+  try {
+    const ridesCollection = getCollection('rides');
+
+    const docs = req.body;
+
+    const result = await ridesCollection.insertMany(docs);
+
+    res.json({
+      message: `Inserted ${result.insertedCount} documents into rides collection`,
+      insertedIds: result.insertedIds,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// DELETE: Delete all rides
+const deleteAllRides = async (req, res) => {
+  try {
+    const ridesCollection = getCollection('rides');
+
+    const result = await ridesCollection.deleteMany({});
+    res.json({
+      message: `Deleted ${result.deletedCount} documents from rides collection`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // POST: Update rider status by rideId
 const requestStatus = async (req, res) => {
   try {
@@ -322,12 +356,16 @@ const rejectRide = async (req, res) => {
         rejectedAt: null,
         cancelledAt: null,
         assignedAt: new Date(),
+        startRideAt: null,
+        endRideAt: null,
         riderInfo: {
           fullName: rider.fullName,
           vehicleType: rider.vehicleType,
           vehicleModel: rider.vehicleModel,
           vehicleRegisterNumber: rider.vehicleRegisterNumber,
           email: rider.email,
+          ratings: rider.ratings || 0,
+          completedRides: rider.completedRides || 0,
         },
       };
 
@@ -445,7 +483,7 @@ const rideRequest = async (req, res) => {
 
       // Create a new ride document for this rider
       const ride = {
-        _id: rideId, // ✅ use the same rideId
+        _id: rideId,
         userId,
         riderId: rider._id,
         pickup,
@@ -458,12 +496,16 @@ const rideRequest = async (req, res) => {
         rejectedAt: null,
         cancelledAt: null,
         assignedAt: new Date(),
+        startRideAt: null,
+        endRideAt: null,
         riderInfo: {
           fullName: rider.fullName,
           vehicleType: rider.vehicleType,
           vehicleModel: rider.vehicleModel,
           vehicleRegisterNumber: rider.vehicleRegisterNumber,
           email: rider.email,
+          ratings: rider.ratings || 0,
+          completedRides: rider.completedRides || 0,
         },
       };
 
@@ -530,6 +572,8 @@ module.exports = {
   getAllRides,
   getAvailableRide,
   getCurrentRide,
+  insertRides,
+  deleteAllRides,
   requestStatus,
   setStatusOffline,
   updateLocation,

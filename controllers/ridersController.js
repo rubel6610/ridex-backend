@@ -1,12 +1,12 @@
 const { ObjectId } = require('mongodb');
-const { getCollection } = require("../utils/getCollection");
-const bcrypt = require("bcrypt");
+const { getCollection } = require('../utils/getCollection');
+const bcrypt = require('bcrypt');
 
 // POST: Become a rider with password validation
 const becomeRider = async (req, res) => {
   try {
-    const ridersCollection = getCollection("riders");
-    const usersCollection = getCollection("users");
+    const ridersCollection = getCollection('riders');
+    const usersCollection = getCollection('users');
     const {
       userId,
       password,
@@ -21,27 +21,27 @@ const becomeRider = async (req, res) => {
     const user = await usersCollection.findOne({
       $or: [{ _id: new ObjectId(new ObjectId(userId)) }, { _id: userId }],
     });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Check if already a rider
-    if (user.role === "rider") {
-      return res.status(400).json({ message: "You are already a rider" });
+    // check if already rider
+    if (user.role === 'rider') {
+      return res.status(400).json({ message: 'You are already a rider' });
     }
 
     // Check if user already requested to be a rider
     const existingRider = await ridersCollection.findOne({
       userId: user._id.toString(),
     });
-    if (existingRider && user.role === "user") {
+    if (existingRider && user.role === 'user') {
       return res
         .status(400)
-        .json({ message: "Your rider request is already under review" });
+        .json({ message: 'Your rider request is already under review' });
     }
 
     // Validate password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({ message: 'Invalid password' });
     }
 
     // Hash password again for riders collection
@@ -56,12 +56,15 @@ const becomeRider = async (req, res) => {
       email: user.email,
       emergency_contact: user.phoneNumber,
       present_address: present_address || user.present_address,
+      reviews: 0,
+      ratings: 0,
+      completedRides: 0,
       vehicleType,
       vehicleModel,
       vehicleRegisterNumber,
       drivingLicense,
       password: hashedPassword,
-      status: "offline",
+      status: 'offline',
       location: null,
       ongoingTripId: null,
       lastUpdated: null,
@@ -79,23 +82,22 @@ const becomeRider = async (req, res) => {
       );
     }
 
-    // Return inserted rider object (with _id)
-    res.status(201).json({ _id: result.insertedId, ...riderData });
+    res.status(201).json({ message: 'Rider request submitted!' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
 // GET: Get all riders
 const getRiders = async (req, res) => {
   try {
-    const ridersCollection = getCollection("riders");
+    const ridersCollection = getCollection('riders');
     const riders = await ridersCollection.find().toArray();
     res.status(200).json({ riders });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -130,21 +132,40 @@ const getSingleRider = async (req, res) => {
   }
 };
 
+// POST: Insert many riders
+const insertRiders = async (req, res) => {
+  try {
+    const ridersCollection = getCollection('riders');
+
+    const docs = req.body;
+
+    const result = await ridersCollection.insertMany(docs);
+
+    res.json({
+      message: `Inserted ${result.insertedCount} documents into riders collection`,
+      insertedIds: result.insertedIds,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // PUT: Update rider by ID
 const updateRiderById = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    if (!id) return res.status(400).json({ message: "Id is required" });
+    if (!id) return res.status(400).json({ message: 'Id is required' });
 
-    const ridersCollection = getCollection("riders");
+    const ridersCollection = getCollection('riders');
 
     const existingRider = await ridersCollection.findOne({
       $or: [{ _id: new ObjectId(id) }, { _id: id }],
     });
     if (!existingRider)
-      return res.status(404).json({ message: "Rider not found" });
+      return res.status(404).json({ message: 'Rider not found' });
 
     await ridersCollection.updateOne(
       { _id: new ObjectId(id) },
@@ -152,11 +173,11 @@ const updateRiderById = async (req, res) => {
     );
 
     res.status(200).json({
-      message: "Rider updated successfully",
+      message: 'Rider updated successfully',
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -164,15 +185,15 @@ const updateRiderById = async (req, res) => {
 const deleteRiderById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ message: "Rider ID is required" });
+    if (!id) return res.status(400).json({ message: 'Rider ID is required' });
 
-    const ridersCollection = getCollection("riders");
+    const ridersCollection = getCollection('riders');
 
     const existingRider = await ridersCollection.findOne({
       $or: [{ _id: new ObjectId(id) }, { _id: id }],
     });
     if (!existingRider) {
-      return res.status(404).json({ message: "Rider not found" });
+      return res.status(404).json({ message: 'Rider not found' });
     }
 
     const result = await ridersCollection.deleteOne({
@@ -180,29 +201,28 @@ const deleteRiderById = async (req, res) => {
     });
 
     if (result.deletedCount === 0) {
-      return res.status(404).json({ message: "Rider not found" });
+      return res.status(404).json({ message: 'Rider not found' });
     }
 
-    res.status(200).json({ message: "Rider deleted successfully" });
+    res.status(200).json({ message: 'Rider deleted successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-// DELETE: Delete full collection
-const deleteAll = async (req, res) => {
+// DELETE: Delete fall riders
+const deleteAllRiders = async (req, res) => {
   try {
-    const DeleteCollection = getCollection('riders');
+    const ridersCollection = getCollection('riders');
 
-    const result = await DeleteCollection.deleteMany({});
+    const result = await ridersCollection.deleteMany({});
     res.json({
       message: `Deleted ${result.deletedCount} documents from riders collection`,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -210,7 +230,8 @@ module.exports = {
   becomeRider,
   getRiders,
   getSingleRider,
-  deleteRiderById,
+  insertRiders,
   updateRiderById,
-  deleteAll,
+  deleteRiderById,
+  deleteAllRiders,
 };

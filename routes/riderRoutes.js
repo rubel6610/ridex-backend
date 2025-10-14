@@ -4,16 +4,18 @@ const {
   becomeRider,
   getRiders,
   getSingleRider,
+  insertRiders,
   updateRiderById,
   deleteRiderById,
-  deleteAll,
+  deleteAllRiders,
 } = require('../controllers/ridersController');
 
 router.post('/become-rider', becomeRider);
 router.get('/riders', getRiders);
-router.post('/rider/:id', getSingleRider);
+router.get('/rider/:id', getSingleRider);
+router.post('/rider/insert-allRiders', insertRiders);
 router.put('/update-rider/:id', updateRiderById);
 router.delete('/delete-rider/:id', deleteRiderById);
-router.delete('/rider/delete-all', deleteAll);
+router.delete('/rider/delete-allRiders', deleteAllRiders);
 
 module.exports = router;
