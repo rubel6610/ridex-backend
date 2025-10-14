@@ -98,10 +98,11 @@ const initPayment = async (req, res) => {
     // sslcommerz initiating
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
     const apiResponse = await sslcz.init(data);
-    // console.log(apiResponse);
+    console.log(apiResponse);
 
     // Redirect the user to payment gateway
     res.json({ url: apiResponse.GatewayPageURL });
+   
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Payment init failed' });
@@ -133,7 +134,7 @@ const successPayment = async (req, res) => {
     );
 
     if (result.modifiedCount > 0) {
-      const redirectUrl = `${process.env.CLIENT_URL}/dashboard/payment/success-review?paymentId=${tran_id}&rideId=${rideId}&userId=${userId}&riderId=${riderId}`;
+      const redirectUrl = `${process.env.CLIENT_URL}/dashboard/user/payment/success-review?paymentId=${tran_id}&rideId=${rideId}&userId=${userId}&riderId=${riderId}`;
       console.log('➡️ Redirecting to:', redirectUrl);
       return res.redirect(redirectUrl);
     } else {
