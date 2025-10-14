@@ -17,8 +17,8 @@ const getAllRides = async (req, res) => {
   }
 };
 
-// GET: Get single specific ride with rideId with verification
-const getInstantRide = async (req, res) => {
+// GET: Get all available rides with rideId
+const getAvailableRide = async (req, res) => {
   try {
     const riderId = req.params.riderId;
 
@@ -34,13 +34,41 @@ const getInstantRide = async (req, res) => {
 
     // now find rides for that rider
     const rides = await ridesCollection
-      .find({ riderId: rider._id })
+      .find({ riderId: rider._id, status: 'pending' })
       .toArray();
 
     res.json({ rides, rider });
   } catch (err) {
     console.error('Ride fetch error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// GET: Get current ride status and info by ID
+const getCurrentRide = async (req, res) => {
+  try {
+    const { rideId } = req.params;
+
+    if (!rideId) {
+      return res.status(400).json({ message: 'Ride ID is required' });
+    }
+
+    const ridesCollection = getCollection('rides');
+    const ride = await ridesCollection.findOne({ _id: new ObjectId(rideId) });
+
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    // শুধু স্ট্যাটাস ও রাইডার ইনফো পাঠানো দরকার
+    return res.json({
+      success: true,
+      status: ride.status,
+      rideInfo: ride || null,
+    });
+  } catch (error) {
+    console.error('🔥 Ride status fetch error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -57,7 +85,7 @@ const requestStatus = async (req, res) => {
     }
 
     const result = await ridersCollection.updateOne(
-      { _id: riderId }, // riderId দিয়ে খুঁজছি
+      { _id: new ObjectId(riderId) },
       { $set: { status } }
     );
 
@@ -129,7 +157,7 @@ const updateLocation = async (req, res) => {
     };
 
     const result = await ridersCollection.updateOne(
-      { _id: riderId }, // riderId দিয়ে খুঁজছি
+      { _id: new ObjectId(riderId) }, // riderId দিয়ে খুঁজছি
       { $set: updatedDoc }
     );
 
@@ -144,47 +172,42 @@ const updateLocation = async (req, res) => {
   }
 };
 
-// POST: Rider accept
+// POST: Rider accept ride
 const acceptRide = async (req, res) => {
   try {
     const { rideId, riderId } = req.body;
-    console.log('rideId:', rideId, 'riderId:', riderId);
 
     if (!rideId || !riderId) {
       return res.status(400).json({ message: 'rideId and riderId required' });
     }
 
     const ridesCollection = getCollection('rides');
+    const usersCollection = getCollection('users');
 
-    // if your rides docs have riderId stored as a string:
-    const filter = { _id: new ObjectId(rideId), riderId };
-
-    // if your rides docs store riderId as ObjectId:
-    // const filter = { _id: new ObjectId(rideId), riderId: new ObjectId(riderId) };
-
-    // 1️⃣ Find the ride first
+    const filter = { _id: new ObjectId(rideId) };
     const ride = await ridesCollection.findOne(filter);
-
     if (!ride) {
-      return res
-        .status(404)
-        .json({ message: 'Ride not found or already processed' });
+      console.log('🚫 Ride not found with filter:', { filter });
+      return res.status(404).json({ message: 'Ride not found' });
     }
 
-    // 2️⃣ Update the ride
-    const updateResult = await ridesCollection.updateOne(filter, {
-      $set: {
-        status: 'accepted',
-        acceptedAt: new Date(),
-      },
+    await ridesCollection.updateOne(filter, {
+      $set: { status: 'accepted', acceptedAt: new Date() },
     });
 
-    if (updateResult.modifiedCount === 0) {
-      return res.status(400).json({ message: 'No changes made to the ride' });
+    const user = await usersCollection.findOne({
+      _id: new ObjectId(ride.userId),
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // 3️⃣ Fetch the updated ride
     const updatedRide = await ridesCollection.findOne(filter);
+
+    if (!updatedRide) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
 
     // TODO: Socket.IO: notify user
     // io.to(ride.value.userId.toString()).emit('ride-accepted', { rideId, riderInfo: ride.value.riderInfo, eta: '5 mins' });
@@ -192,23 +215,22 @@ const acceptRide = async (req, res) => {
     // Send email to user
     await transporter.sendMail({
       from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-      to: 'user@example.com', // এখানে User email বসাবে
+      to: user?.email,
       subject: 'Your Ride Accepted',
       html: `
-        <h2>Ride Accepted</h2>
-        <p>Rider ${ride.value.riderInfo.fullName} has accepted your ride request.</p>
-        <ul>
-          <li><strong>Vehicle:</strong> ${ride.value.riderInfo.vehicleModel}</li>
-          <li><strong>Plate:</strong> ${ride.value.riderInfo.vehicleRegisterNumber}</li>
-          <li><strong>ETA:</strong> 5 mins</li>
-        </ul>
-      `,
+            <h2>Ride Accepted</h2>
+            <p>Rider ${ride?.riderInfo?.fullName} has accepted your ride request.</p>
+            <ul>
+              <li><strong>Vehicle:</strong> ${ride?.riderInfo?.vehicleModel}</li>
+              <li><strong>Plate:</strong> ${ride?.riderInfo?.vehicleRegisterNumber}</li>
+              <li><strong>ETA:</strong> 5 mins</li>
+            </ul>
+          `,
     });
 
-    // Respond with updated ride
-    res.json({ success: true, ride: updatedRide });
+    return res.json({ success: true, ride: updatedRide });
   } catch (error) {
-    console.error('Accept ride error:', error);
+    console.error('🔥 Accept ride error caught:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -217,73 +239,147 @@ const acceptRide = async (req, res) => {
 const rejectRide = async (req, res) => {
   try {
     const { rideId, riderId } = req.body;
-    console.log(rideId, riderId);
-    if (!rideId || !riderId)
+
+    if (!rideId || !riderId) {
       return res.status(400).json({ message: 'rideId and riderId required' });
+    }
 
     const ridesCollection = getCollection('rides');
     const ridersCollection = getCollection('riders');
 
-    await ridesCollection.updateOne(
+    // Mark the current ride as rejected
+    const result = await ridesCollection.updateOne(
       { _id: new ObjectId(rideId), riderId: new ObjectId(riderId) },
       { $set: { status: 'rejected', rejectedAt: new Date() } }
     );
 
-    const ride = await ridesCollection.findOne({ _id: new ObjectId(rideId) });
-    if (!ride) return res.status(404).json({ message: 'Ride not found' });
+    if (result.matchedCount === 0) {
+      console.log('Ride marked as rejected:', rideId);
+    }
 
-    // Find next nearest rider excluding current rejected rider
-    const nearestRiders = await ridersCollection
-      .aggregate([
-        {
-          $geoNear: {
-            near: ride.pickup,
-            distanceField: 'distance',
-            spherical: true,
-            maxDistance: 5000,
-          },
-        },
-        {
-          $match: {
-            status: 'online',
-            vehicleType: ride.vehicleType,
-            _id: { $ne: new ObjectId(riderId) },
-          },
-        },
-        { $limit: 1 },
-      ])
-      .toArray();
-
-    if (nearestRiders.length === 0)
-      return res.status(404).json({ message: 'No other rider found' });
-
-    const nextRider = nearestRiders[0];
-
-    // TODO: Socket.IO: notify nextRider
-    // io.to(nextRider._id.toString()).emit('ride-request', ride);
-
-    // Send email to next rider
-    await transporter.sendMail({
-      from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-      to: nextRider.email,
-      subject: 'New Ride Request',
-      html: `
-        <h2>New Ride Request</h2>
-        <p>Hello ${nextRider.fullName || 'Rider'},</p>
-        <p>You have a new ride request (replacement) from user ${
-          ride.userId
-        }.</p>
-        <ul>
-          <li><strong>Pickup:</strong> ${ride.pickup.coordinates.join(
-            ', '
-          )}</li>
-          <li><strong>Drop:</strong> ${ride.drop.coordinates.join(', ')}</li>
-          <li><strong>Fare:</strong> ${ride.fare}</li>
-        </ul>
-      `,
+    const rejectedRide = await ridesCollection.findOne({
+      _id: new ObjectId(rideId),
     });
+    if (!rejectedRide) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
 
-    res.json({ success: true, nextRider });
+    // Helper: find nearest available rider in ascending order (excluding already tried)
+    const findNearestRider = async (excludeIds = []) => {
+      const nearest = await ridersCollection
+        .aggregate([
+          {
+            $geoNear: {
+              near: rejectedRide.pickup,
+              distanceField: 'distance',
+              spherical: true,
+            },
+          },
+          {
+            $match: {
+              status: 'online',
+              vehicleType: rejectedRide.vehicleType,
+              _id: { $nin: excludeIds },
+            },
+          },
+          { $sort: { distance: 1 } }, // ascending — closest first
+          { $limit: 1 },
+        ])
+        .toArray();
+
+      return nearest[0] || null;
+    };
+
+    const sendRideEmail = async (rider, subject, htmlBody) => {
+      const dashboardUrl = `http://localhost:3000/dashboard/rider/available-rides`;
+      await transporter.sendMail({
+        from: `"RideX Support" <${process.env.EMAIL_USER}>`,
+        to: rider.email,
+        subject,
+        html: htmlBody.replace('{dashboardUrl}', dashboardUrl),
+      });
+    };
+
+    // Recursive function: assign next rider and auto-handle rejection
+    const tryAssignNextRider = async (excludeIds = []) => {
+      const rider = await findNearestRider(excludeIds);
+      if (!rider) {
+        console.log('No nearby riders available.');
+        return;
+      }
+
+      // ✅ Create a new ride document for this rider
+      const ride = {
+        userId: rejectedRide.userId,
+        riderId: rider._id,
+        pickup: rejectedRide.pickup,
+        drop: rejectedRide.drop,
+        fare: rejectedRide.fare,
+        vehicleType: rejectedRide.vehicleType,
+        status: 'pending',
+        createdAt: new Date(),
+        acceptedAt: null,
+        rejectedAt: null,
+        cancelledAt: null,
+        assignedAt: new Date(),
+        riderInfo: {
+          fullName: rider.fullName,
+          vehicleType: rider.vehicleType,
+          vehicleModel: rider.vehicleModel,
+          vehicleRegisterNumber: rider.vehicleRegisterNumber,
+          email: rider.email,
+        },
+      };
+
+      const { insertedId } = await ridesCollection.insertOne(ride);
+
+      // ✅ Send email to new rider
+      await sendRideEmail(
+        rider,
+        'New Ride Request',
+        `
+        <h2>New Ride Request</h2>
+        <p>Hello ${rider.fullName || 'Rider'},</p>
+        <p>You have a new ride request from user <b>${
+          rejectedRide.userId
+        }</b>.</p>
+        <a href="{dashboardUrl}" style="background:#4CAF50;color:white;padding:10px 15px;border-radius:5px;text-decoration:none;">View Ride</a>
+        <p>If you don’t accept this ride within 15 seconds, it will automatically go to another nearby driver.</p>
+        `
+      );
+
+      // Wait 15 seconds → if still pending, auto-reject + find next rider
+      setTimeout(async () => {
+        const currentRide = await ridesCollection.findOne({ _id: insertedId });
+        if (currentRide && currentRide.status === 'pending') {
+          await ridesCollection.updateOne(
+            { _id: insertedId },
+            { $set: { status: 'auto-rejected', rejectedAt: new Date() } }
+          );
+
+          console.log('Auto-rejected ride:', insertedId);
+
+          await sendRideEmail(
+            rider,
+            'Ride Request Auto-Rejected',
+            `
+            <h2>Ride Request Auto-Rejected</h2>
+            <p>Hello ${rider.fullName || 'Rider'},</p>
+            <p>Your recent ride request was automatically rejected since it wasn’t accepted within 15 seconds.</p>
+            <p>— RideX Team</p>
+            `
+          );
+
+          // Recursively find next nearest rider excluding this one
+          await tryAssignNextRider([...excludeIds, rider._id]);
+        }
+      }, 15000);
+    };
+
+    // Start from excluding the just-rejected rider
+    await tryAssignNextRider([new ObjectId(riderId)]);
+
+    res.json({ success: true, message: 'Ride reassignment process started' });
   } catch (error) {
     console.error('Reject ride error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -294,117 +390,146 @@ const rejectRide = async (req, res) => {
 // POST: User ride requests
 const rideRequest = async (req, res) => {
   try {
-    // Rider & Ride collection
     const ridersCollection = getCollection('riders');
     const ridesCollection = getCollection('rides');
 
     const { userId, pickup, drop, vehicleType, fare } = req.body;
-    console.log(userId, pickup, drop, vehicleType, fare);
 
-    // Validate input
     if (!userId || !pickup || !drop || !vehicleType || !fare) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // nearest rider search using geoNear
-    const riders = await ridersCollection
-      .aggregate([
-        {
-          $geoNear: {
-            near: pickup, // { type: 'Point', coordinates: [lng, lat] }
-            distanceField: 'distance',
-            spherical: true, // ৫ কিমি
+    // Helper: find nearest available rider (excluding already tried)
+    const findNearestRider = async (excludeIds = []) => {
+      const rider = await ridersCollection
+        .aggregate([
+          {
+            $geoNear: {
+              near: pickup,
+              distanceField: 'distance',
+              spherical: true,
+            },
           },
-        },
-        {
-          $match: {
-            status: 'online',
-            vehicleType: vehicleType,
+          {
+            $match: {
+              status: 'online',
+              vehicleType,
+              _id: { $nin: excludeIds },
+            },
           },
-        },
-        { $limit: 1 },
-      ])
-      .toArray();
+          { $sort: { distance: 1, _id: 1 } }, // nearest first
+          { $limit: 1 },
+        ])
+        .toArray();
 
-    if (riders.length === 0) {
-      return res.status(404).json({ message: 'No rider found nearby' });
-    }
-
-    const rider = riders[0];
-
-    // Ride document with default fields
-    const ride = {
-      userId: userId,
-      riderId: rider._id,
-      pickup,
-      drop,
-      fare,
-      vehicleType,
-      status: 'pending',
-      createdAt: new Date(),
-      acceptedAt: null,
-      rejectedAt: null,
-      cancelledAt: null,
-      liveLocation: null,
-      distance: rider.distance || null,
-      riderInfo: {
-        fullName: rider.fullName || null,
-        vehicleType: rider.vehicleType || null,
-        vehicleModel: rider.vehicleModel || null,
-        vehicleRegisterNumber: rider.vehicleRegisterNumber || null,
-        email: rider.email || null,
-      },
+      return rider[0] || null;
     };
 
-    // Insert ride into rides collection
-    const result = await ridesCollection.insertOne(ride);
+    const sendRideEmail = async (rider, subject, htmlBody) => {
+      const dashboardUrl = `http://localhost:3000/dashboard/rider/available-rides`;
+      await transporter.sendMail({
+        from: `"RideX Support" <${process.env.EMAIL_USER}>`,
+        to: rider.email,
+        subject,
+        html: htmlBody.replace('{dashboardUrl}', dashboardUrl),
+      });
+    };
 
-    // TODO: Socket.IO: notify rider in real-time
-    // io.to(rider._id.toString()).emit('ride-request', ride);
+    // Recursive logic to handle retries
+    const tryAssignRider = async (excludeIds = [], rideId) => {
+      const rider = await findNearestRider(excludeIds);
+      if (!rider) {
+        console.log('❌ No more riders available.');
+        return;
+      }
 
-    const dashboardUrl = `http://localhost:3000/dashboard/rider/available-rides?rideId=${result._id}`;
+      // Create a new ride document for this rider
+      const ride = {
+        _id: rideId, // ✅ use the same rideId
+        userId,
+        riderId: rider._id,
+        pickup,
+        drop,
+        fare,
+        vehicleType,
+        status: 'pending',
+        createdAt: new Date(),
+        acceptedAt: null,
+        rejectedAt: null,
+        cancelledAt: null,
+        assignedAt: new Date(),
+        riderInfo: {
+          fullName: rider.fullName,
+          vehicleType: rider.vehicleType,
+          vehicleModel: rider.vehicleModel,
+          vehicleRegisterNumber: rider.vehicleRegisterNumber,
+          email: rider.email,
+        },
+      };
 
-    // Send email to rider\
-    await transporter.sendMail({
-      from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-      to: rider.email,
-      subject: 'New Ride Request',
-      html: `
-    <h2>New Ride Request</h2>
-    <p>Hello ${rider.fullName || 'Rider'},</p>
-    <p>You have a new ride request from user ${userId}.</p>
-    <ul>
-      <li><strong>Pickup:</strong> ${pickup.coordinates.join(', ')}</li>
-      <li><strong>Drop:</strong> ${drop.coordinates.join(', ')}</li>
-      <li><strong>Fare:</strong> ${fare}</li>
-    </ul>
-     <a href="${dashboardUrl}" style="background:#4CAF50;color:white;padding:10px 15px;border-radius:5px;text-decoration:none;">
-      View Ride
-    </a>
-    <p>Please check your dashboard or app to accept or reject this request.</p>
-  `,
-    });
+      await ridesCollection.insertOne(ride);
 
-    // Response to frontend
-    res.status(201).json({
+      // ✅ Send email as backup notification
+      await sendRideEmail(
+        rider,
+        'New Ride Request',
+        `
+        <h2>New Ride Request</h2>
+        <p>Hello ${rider.fullName || 'Rider'},</p>
+        <p>You have a new ride request from user <b>${userId}</b>.</p>
+        <a href="{dashboardUrl}" style="background:#4CAF50;color:white;padding:10px 15px;border-radius:5px;text-decoration:none;">View Ride</a>
+        <p>If you don’t accept this ride within 15 seconds, it will automatically go to another nearby driver.</p>
+        `
+      );
+
+      // Wait 15s → auto reject if still pending
+      setTimeout(async () => {
+        const currentRide = await ridesCollection.findOne({ _id: rideId });
+        if (currentRide && currentRide.status === 'pending') {
+          await ridesCollection.updateOne(
+            { _id: rideId },
+            { $set: { status: 'auto-rejected', rejectedAt: new Date() } }
+          );
+
+          await sendRideEmail(
+            rider,
+            'Ride Request Auto-Rejected',
+            `
+            <h2>Ride Request Auto-Rejected</h2>
+            <p>Hello ${rider.fullName || 'Rider'},</p>
+            <p>Your recent ride request was automatically rejected since it wasn’t accepted within 15 seconds.</p>
+            <p>— RideX Team</p>
+            `
+          );
+
+          // Try next nearest rider (add current rider to excluded list)
+          await tryAssignRider([...excludeIds, rider._id], rideId);
+        }
+      }, 15000);
+    };
+
+    // ✅ Generate unique rideId immediately
+    const rideId = new ObjectId();
+
+    // Start first attempt (pass rideId)
+    tryAssignRider([], rideId);
+
+    // ✅ Respond immediately with rideId
+    return res.status(201).json({
       success: true,
-      rideId: result.insertedId,
-      rider: {
-        _id: rider._id,
-        fullName: rider.fullName,
-        vehicleType: rider.vehicleType,
-        distance: rider.distance,
-      },
+      message: 'Ride request started',
+      rideId: rideId.toString(),
     });
   } catch (error) {
-    console.error('Ride request error:', error);
+    console.error('🔥 Ride request error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
 module.exports = {
   getAllRides,
-  getInstantRide,
+  getAvailableRide,
+  getCurrentRide,
   requestStatus,
   setStatusOffline,
   updateLocation,

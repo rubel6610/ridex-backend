@@ -103,22 +103,28 @@ const getSingleRider = async (req, res) => {
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ message: "Id is required" });
+      return res.status(400).json({ message: 'Id is required' });
     }
 
-    const ridersCollection = getCollection("riders");
+    const ridersCollection = getCollection('riders');
 
-    const query = { $or: [{ _id: new ObjectId(id) }, { _id: id }] };
+    let query;
+    if (ObjectId.isValid(id)) {
+      query = { _id: new ObjectId(id) };
+    } else {
+      query = { _id: id }; // fallback (যদি কখনও _id string আকারে stored থাকে)
+    }
+
     const singleRider = await ridersCollection.findOne(query);
 
     if (!singleRider) {
-      return res.status(404).json({ message: "Rider not found" });
+      return res.status(404).json({ message: 'Rider not found' });
     }
 
     res.status(200).json(singleRider);
   } catch (error) {
-    console.error("❌ Error fetching rider:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Error fetching rider:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

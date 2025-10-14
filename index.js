@@ -1,18 +1,12 @@
 // index.js
 require('dotenv').config({ quiet: true });
 const express = require('express');
+const { initSocket } = require('./socket/socket');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
+const bodyParser = require('body-parser');
 const http = require('http');
 
-const userRoutes = require('./routes/userRoutes');
-const authRoutes = require('./routes/authRoutes');
-const riderRoutes = require('./routes/riderRoutes');
-const userManageRoutes = require('./routes/userManageRoutes');
-const riderManageRoutes = require('./routes/riderManageRoutes');
-const rideRoutes = require('./routes/rideRoutes');
-const supportRoutes = require('./routes/supportRoutes');
-const { initSocket } = require('./socket/socket');  
 
 const app = express();
 const server = http.createServer(app);
@@ -21,6 +15,21 @@ const server = http.createServer(app);
 app.use(cors());
 app.use(express.json());
 initSocket(server);
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+// Import Routes
+const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
+const riderRoutes = require('./routes/riderRoutes');
+const userManageRoutes = require('./routes/userManageRoutes');
+const riderManageRoutes = require('./routes/riderManageRoutes');
+const rideRoutes = require('./routes/rideRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const supportRoutes = require('./routes/supportRoutes');
+
+
 // Default route
 app.get('/', (req, res) => {
   res.send('🚀 Server is running...');
@@ -29,12 +38,12 @@ app.get('/', (req, res) => {
 // ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes);
+app.use('/api', rideRoutes);
 app.use('/api', riderRoutes);
 app.use('/api', userManageRoutes);
 app.use('/api', riderManageRoutes);
-app.use('/api', rideRoutes);
-app.use('/api', rideRoutes);
-app.use('/support',supportRoutes)
+app.use('/api/payment', paymentRoutes);
+app.use('/support', supportRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
