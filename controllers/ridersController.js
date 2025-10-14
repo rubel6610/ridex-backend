@@ -1,4 +1,4 @@
-const { ObjectId } = require("mongodb");
+const { ObjectId } = require('mongodb');
 const { getCollection } = require("../utils/getCollection");
 const bcrypt = require("bcrypt");
 
@@ -19,7 +19,7 @@ const becomeRider = async (req, res) => {
 
     // Find user by ID
     const user = await usersCollection.findOne({
-      $or: [{ _id: new ObjectId(userId) }, { _id: userId }],
+      $or: [{ _id: new ObjectId(new ObjectId(userId)) }, { _id: userId }],
     });
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -105,22 +105,28 @@ const getSingleRider = async (req, res) => {
     const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ message: "Id is required" });
+      return res.status(400).json({ message: 'Id is required' });
     }
 
-    const ridersCollection = getCollection("riders");
+    const ridersCollection = getCollection('riders');
 
-    const query = { $or: [{ _id: new ObjectId(id) }, { _id: id }] };
+    let query;
+    if (ObjectId.isValid(id)) {
+      query = { _id: new ObjectId(id) };
+    } else {
+      query = { _id: id }; // fallback (যদি কখনও _id string আকারে stored থাকে)
+    }
+
     const singleRider = await ridersCollection.findOne(query);
 
     if (!singleRider) {
-      return res.status(404).json({ message: "Rider not found" });
+      return res.status(404).json({ message: 'Rider not found' });
     }
 
     res.status(200).json(singleRider);
   } catch (error) {
-    console.error("❌ Error fetching rider:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Error fetching rider:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -180,6 +186,22 @@ const deleteRiderById = async (req, res) => {
     res.status(200).json({ message: "Rider deleted successfully" });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// DELETE: Delete full collection
+const deleteAll = async (req, res) => {
+  try {
+    const DeleteCollection = getCollection('riders');
+
+    const result = await DeleteCollection.deleteMany({});
+    res.json({
+      message: `Deleted ${result.deletedCount} documents from riders collection`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -190,4 +212,5 @@ module.exports = {
   getSingleRider,
   deleteRiderById,
   updateRiderById,
+  deleteAll,
 };
