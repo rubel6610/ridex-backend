@@ -6,6 +6,9 @@ const {
   getAllRideReviews,
 } = require('../controllers/rideReviewController');
 
+// POST => create a review
+router.post('/', createRideReview);
+
 
 
 module.exports = router;
