@@ -12,12 +12,14 @@ const {
   acceptRide,
   rejectRide,
   rideRequest,
+  reverseGeocode,
 } = require('../controllers/ridesController');
 
 // COMMON NEED
 router.get('/rides', getAllRides);
 router.get('/rides/:riderId', getAvailableRide);
 router.get('/ride/:rideId', getCurrentRide);
+router.get('/reverse-geocode', reverseGeocode);
 router.post('/ride/insert-allRides', insertRides);
 router.delete('/ride/delete-allRides', deleteAllRides);
 

@@ -12,7 +12,10 @@ const app = express();
 const server = http.createServer(app);
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', process.env.CLIENT_URL],
+  credentials: true,
+}));  
 app.use(express.json());
 initSocket(server);
 

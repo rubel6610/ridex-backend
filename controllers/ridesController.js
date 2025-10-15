@@ -72,14 +72,55 @@ const getCurrentRide = async (req, res) => {
   }
 };
 
+const reverseGeocode = async (req, res) => {
+  try {
+    const { lat, lon } = req.query;
+
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+    );
+
+
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Reverse geocode error:', error);
+    if (error.name === 'AbortError') {
+      return res.status(408).json({ error: 'Request timed out' });
+    }
+    res.status(500).json({ error: 'Failed to fetch location' });
+  }
+};
+
+
+
 // POST: Insert many rides
 const insertRides = async (req, res) => {
   try {
     const ridesCollection = getCollection('rides');
-
+    const usersCollection = getCollection('users');
     const docs = req.body;
 
-    const result = await ridesCollection.insertMany(docs);
+    // Enrich each ride doc with user's photoUrl from users collection
+    const enrichedDocs = await Promise.all(
+      (Array.isArray(docs) ? docs : [docs]).map(async (rideDoc) => {
+        try {
+          const userId = rideDoc?.userId;
+          const user = userId
+            ? await usersCollection.findOne({ _id: new ObjectId(userId) })
+            : null;
+
+          const userPhotoUrl = user?.photoUrl || null;
+          return { ...rideDoc, userPhotoUrl };
+        } catch (_) {
+          // If lookup fails for any reason, proceed without photo
+          return { ...rideDoc };
+        }
+      })
+    );
+
+    const result = await ridesCollection.insertMany(enrichedDocs);
 
     res.json({
       message: `Inserted ${result.insertedCount} documents into rides collection`,
@@ -580,4 +621,5 @@ module.exports = {
   acceptRide,
   rejectRide,
   rideRequest,
+  reverseGeocode
 };
