@@ -31,7 +31,7 @@ const riderManageRoutes = require('./routes/riderManageRoutes');
 const rideRoutes = require('./routes/rideRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const supportRoutes = require('./routes/supportRoutes');
-
+const rideReviewRoutes = require('./routes/rideReviewRoutes');
 
 // Default route
 app.get('/', (req, res) => {
@@ -47,6 +47,7 @@ app.use('/api', userManageRoutes);
 app.use('/api', riderManageRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/support', supportRoutes);
+app.use('/api/ride-reviews', rideReviewRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
