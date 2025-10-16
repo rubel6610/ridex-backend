@@ -75,13 +75,9 @@ const getCurrentRide = async (req, res) => {
 const reverseGeocode = async (req, res) => {
   try {
     const { lat, lon } = req.query;
-
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
     );
-
-
-
     const data = await response.json();
     res.json(data);
   } catch (error) {
