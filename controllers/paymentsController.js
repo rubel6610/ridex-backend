@@ -113,7 +113,7 @@ const successPayment = async (req, res) => {
   try {
     console.log('✅ SSLCommerz Success Data:', req.body);
 
-    const { tran_id, value_a, value_b, value_c } = req.body;
+    const { tran_id, value_a, value_b, value_c, amount } = req.body;
 
     const rideId = value_a;
     const userId = value_b;
@@ -134,7 +134,7 @@ const successPayment = async (req, res) => {
     );
 
     if (result.modifiedCount > 0) {
-      const redirectUrl = `${process.env.CLIENT_URL}/dashboard/user/payment/success-review?paymentId=${tran_id}&rideId=${rideId}&userId=${userId}&riderId=${riderId}`;
+      const redirectUrl = `${process.env.CLIENT_URL}/dashboard/user/payment/success-review?paymentId=${tran_id}&rideId=${rideId}&userId=${userId}&riderId=${riderId}&amount=${amount}`;
       console.log('➡️ Redirecting to:', redirectUrl);
       return res.redirect(redirectUrl);
     } else {
