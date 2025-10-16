@@ -17,7 +17,7 @@ const becomeRider = async (req, res) => {
       drivingLicense,
     } = req.body;
 
-    // find user by ID
+    // Find user by ID
     const user = await usersCollection.findOne({
       $or: [{ _id: new ObjectId(new ObjectId(userId)) }, { _id: userId }],
     });
@@ -28,9 +28,9 @@ const becomeRider = async (req, res) => {
       return res.status(400).json({ message: 'You are already a rider' });
     }
 
-    // check if user already requested to be a rider
+    // Check if user already requested to be a rider
     const existingRider = await ridersCollection.findOne({
-      userId: userId,
+      userId: user._id.toString(),
     });
     if (existingRider && user.role === 'user') {
       return res
@@ -38,16 +38,16 @@ const becomeRider = async (req, res) => {
         .json({ message: 'Your rider request is already under review' });
     }
 
-    // validate password
+    // Validate password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid password' });
     }
 
-    // hash password again for riders collection
+    // Hash password again for riders collection
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // create rider profile
+    // Create rider profile
     const riderData = {
       userId: user._id.toString(),
       fullName: user.fullName,
@@ -71,9 +71,10 @@ const becomeRider = async (req, res) => {
       createdAt: new Date(),
     };
 
-    await ridersCollection.insertOne(riderData);
+    // Insert into riders collection
+    const result = await ridersCollection.insertOne(riderData);
 
-    // update user present_address if changed
+    // Update user present_address if changed
     if (present_address) {
       await usersCollection.updateOne(
         { _id: new ObjectId(user._id) },

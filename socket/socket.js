@@ -6,7 +6,7 @@ let io;
 function initSocket(server) {
   io = new Server(server, {
     cors: {
-      origin: '*', // frontend domain দাও
+      origin: ['http://localhost:3000', 'http://localhost:3001',process.env.CLIENT_URL], 
       methods: ['GET', 'POST'],
     },
   });
