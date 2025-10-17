@@ -58,7 +58,7 @@ const initPayment = async (req, res) => {
 
     // sslcommerz init data
     const data = {
-      total_amount: req.body.totalNum,
+      total_amount: req.body.totalNum ||  0,
       currency: 'BDT',
       tran_id: insertResult.insertedId.toString(),
       success_url: `${process.env.SERVER_BASE_URL}/api/payment/success`,

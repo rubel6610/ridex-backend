@@ -4,6 +4,7 @@ const {
   getAllRides,
   getAvailableRide,
   getCurrentRide,
+  getSpecificRide,
   insertRides,
   deleteAllRides,
   requestStatus,
@@ -18,6 +19,7 @@ const {
 router.get('/rides', getAllRides);
 router.get('/rides/:riderId', getAvailableRide);
 router.get('/ride/:rideId', getCurrentRide);
+router.get('/specific-rider-ride/:riderId', getSpecificRide);
 router.post('/ride/insert-allRides', insertRides);
 router.delete('/ride/delete-allRides', deleteAllRides);
 
