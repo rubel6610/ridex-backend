@@ -626,5 +626,4 @@ module.exports = {
   acceptRide,
   rejectRide,
   rideRequest,
-  reverseGeocode
 };

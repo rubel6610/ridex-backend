@@ -13,7 +13,6 @@ const {
   acceptRide,
   rejectRide,
   rideRequest,
-  reverseGeocode,
 } = require('../controllers/ridesController');
 
 // COMMON ROUTES
