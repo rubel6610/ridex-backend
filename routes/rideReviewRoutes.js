@@ -10,6 +10,9 @@ const {
 // POST => create a review
 router.post('/', createRideReview);
 
+// Update => rider reviews
+router.put('/update', updateRiderReviews)
+
 // GET => all reviews for a specific rider
 router.get('/rider/:riderId', getRiderReviews);
 

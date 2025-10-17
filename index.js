@@ -12,7 +12,10 @@ const app = express();
 const server = http.createServer(app);
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:3001', process.env.CLIENT_URL],
+  credentials: true,
+}));  
 app.use(express.json());
 initSocket(server);
 
@@ -29,6 +32,7 @@ const rideRoutes = require('./routes/rideRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const rideReviewRoutes = require('./routes/rideReviewRoutes');
+const promotionRoutes = require('./routes/promotionRoutes');
 
 // Default route
 app.get('/', (req, res) => {
@@ -45,6 +49,7 @@ app.use('/api', riderManageRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/support', supportRoutes);
 app.use('/api/ride-reviews', rideReviewRoutes);
+app.use('/api', promotionRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
@@ -63,3 +68,4 @@ const PORT = process.env.PORT || 5000;
     process.exit(1);
   }
 })();
+ 

@@ -75,7 +75,7 @@ const getAllRideReviews = async (req, res) => {
 const updateRiderReviews = async (req, res) => {
   try {
     const { riderId, review } = req.body;
-
+    console.log(req.body);
     if (!riderId || !review) {
       return res.status(400).json({ message: 'riderId and numeric rating are required' });
     }
@@ -88,11 +88,15 @@ const updateRiderReviews = async (req, res) => {
       return res.status(404).json({ message: 'Rider not found' });
     }
 
-    // Get previous rating
-    const previousRating = Number(existingRider.reviews) || 0;
-    const newRating = Number(review.rating);
+    // Safely handle null or undefined reviews field
+    let previousRating = 0;
+    if (existingRider.reviews === null || existingRider.reviews === undefined || isNaN(existingRider.reviews)) {
+      previousRating = 0;
+    } else {
+      previousRating = Number(existingRider.reviews);
+    }
 
-    // Add both ratings together
+    const newRating = Number(review);
     const updatedRating = previousRating + newRating;
 
     // Update the rider document
@@ -107,6 +111,8 @@ const updateRiderReviews = async (req, res) => {
 
     res.status(200).json({
       message: 'Rider review rating updated successfully',
+      previousRating,
+      newRating,
       totalRating: updatedRating,
     });
   } catch (error) {
@@ -121,5 +127,5 @@ module.exports = {
   createRideReview,
   getRiderReviews,
   getAllRideReviews,
-  updateRiderReviews,
+  updateRiderReviews
 };

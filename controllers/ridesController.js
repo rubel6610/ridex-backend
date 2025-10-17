@@ -103,10 +103,28 @@ const getSpecificRide = async (req, res) => {
 const insertRides = async (req, res) => {
   try {
     const ridesCollection = getCollection('rides');
-
+    const usersCollection = getCollection('users');
     const docs = req.body;
 
-    const result = await ridesCollection.insertMany(docs);
+    // Enrich each ride doc with user's photoUrl from users collection
+    const enrichedDocs = await Promise.all(
+      (Array.isArray(docs) ? docs : [docs]).map(async (rideDoc) => {
+        try {
+          const userId = rideDoc?.userId;
+          const user = userId
+            ? await usersCollection.findOne({ _id: new ObjectId(userId) })
+            : null;
+
+          const userPhotoUrl = user?.photoUrl || null;
+          return { ...rideDoc, userPhotoUrl };
+        } catch (_) {
+          // If lookup fails for any reason, proceed without photo
+          return { ...rideDoc };
+        }
+      })
+    );
+
+    const result = await ridesCollection.insertMany(enrichedDocs);
 
     res.json({
       message: `Inserted ${result.insertedCount} documents into rides collection`,
@@ -608,4 +626,5 @@ module.exports = {
   acceptRide,
   rejectRide,
   rideRequest,
+  reverseGeocode
 };
