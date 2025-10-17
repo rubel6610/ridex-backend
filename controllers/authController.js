@@ -9,9 +9,8 @@ const transporter = require("../config/email");
 // POST: Register Controller
 // ============================
 const registerUser = async (req, res) => {
-  const nidCollection = getCollection("nidCollection"); // Dummy NID DB
-  const usersCollection = getCollection("users"); // Real users DB
-
+  const nidCollection = getCollection("nidCollection");
+  const usersCollection = getCollection("users");
   try {
     const { fullName, NIDno, dateOfBirth, email, password, photoUrl } =
       req.body;
@@ -22,6 +21,7 @@ const registerUser = async (req, res) => {
       NIDno,
       dateOfBirth,
     });
+
     if (!nidData) {
       return res
         .status(404)
@@ -31,24 +31,9 @@ const registerUser = async (req, res) => {
     // 2. Check if user already exists
     const existingUser = await usersCollection.findOne({ NIDno });
     if (existingUser) {
-      if (existingUser.isVerified === "approved") {
-        return res
-          .status(400)
-          .json({ message: "You are already registered and approved." });
-      } else if (existingUser.isVerified === "rejected") {
-        return res.status(400).json({
-          message:
-            "Your previous registration was rejected. Please check your NID or required data.",
-        });
-      } else if (existingUser.isVerified === "pending") {
-        return res
-          .status(400)
-          .json({ message: "Your registration is under review." });
-      } else {
-        return res
-          .status(400)
-          .json({ message: "User already exists. Please login." });
-      }
+      return res
+        .status(400)
+        .json({ message: "You are already registered." });
     }
 
     // 3. Hash password
@@ -59,19 +44,22 @@ const registerUser = async (req, res) => {
       ...nidData,
       email,
       password: hashedPassword,
-      role: "user",
-      isVerified: "pending",
+      role: 'user',
+      isVerified: 'verified',
       photoUrl,
       failedAttempts: 0,
       isLocked: false,
       lastFailedAt: null,
       createdAt: new Date().toLocaleString(),
+      reviews: 0,
+      ratings: 0,
+      completedRides: 0,
     };
 
     const result = await usersCollection.insertOne(newUser);
 
     res.status(201).json({
-      message: "User registered successfully and is under review.",
+      message: "User registered successfully ",
       userId: result.insertedId,
     });
   } catch (error) {
@@ -151,7 +139,7 @@ const loginUser = async (req, res) => {
     const token = jwt.sign(
       { id: user._id, nid: user.nid, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "7d" }
     );
 
     res.status(200).json({
@@ -250,9 +238,55 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ============================
+// POST: Logout Controller
+// ============================
+const logoutUser = async (req, res) => {
+  try {
+    const { userId, role } = req.body;
+
+    // Validate request
+    if (!userId || !role) {
+      return res.status(400).json({ 
+        message: "Missing required fields: userId and role" 
+      });
+    }
+
+    // If the user is a rider, set their status to offline
+    if (role === "rider") {
+      const ridersCollection = getCollection("riders");
+      const { ObjectId } = require("mongodb");
+
+      try {
+        // Convert userId to ObjectId
+        const objectId = new ObjectId(userId);
+        
+        const result = await ridersCollection.updateOne(
+          { userId: objectId },
+          { $set: { status: "offline" } }
+        );
+
+        console.log(`Rider status update result:`, result.modifiedCount);
+      } catch (err) {
+        console.error("Error updating rider status:", err);
+        // Continue with logout even if rider status update fails
+      }
+    }
+
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ 
+      message: "Server error",
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   forgotPassword,
   resetPassword,
+  logoutUser,
 };

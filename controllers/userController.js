@@ -1,4 +1,3 @@
-const { transporter } = require('../config/email');
 const { getCollection } = require('../utils/getCollection');
 const { ObjectId } = require('mongodb');
 
@@ -31,16 +30,24 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// GET: Get single user by ID
+// GET: Get single user by ID or Email
 const getSingleUser = async (req, res) => {
   try {
-    const { email } = req.query;
+    const { userId, email } = req.query;
 
-    if (!email) {
-      return res.status(400).json({ message: 'User email required' });
+    if (!userId && !email) {
+      return res.status(400).json({ message: 'User ID or email required' });
     }
+
     const usersCollection = getCollection('users');
-    const query = { email };
+    let query = {};
+
+    if (userId) {
+      query = { _id: new ObjectId(userId) };
+    } else if (email) {
+      query = { email };
+    }
+
     const singleUser = await usersCollection.findOne(query);
 
     if (!singleUser) {
@@ -54,15 +61,36 @@ const getSingleUser = async (req, res) => {
   }
 };
 
+// GET: Get single user by userId
+const getSingleRiderByUserId = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'userId required' });
+    }
+
+    const ridersCollection = getCollection('riders');
+    const query = { userId }; // userId দিয়ে খুঁজছি
+    const singleRider = await ridersCollection.findOne(query);
+
+    if (!singleRider) {
+      return res.status(404).json({ message: 'Rider not found' });
+    }
+
+    res.status(200).json(singleRider);
+  } catch (error) {
+    console.error('❌ Error fetching rider:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // POST: Insert many users
 const insertUsers = async (req, res) => {
-   try {
-    const usersCollection = getCollection('users'); 
+  try {
+    const usersCollection = getCollection('users');
 
     const docs = req.body;
-    if (!Array.isArray(docs) || docs.length === 0) {
-      return res.status(400).json({ message: 'Provide an array of documents' });
-    }
 
     const result = await usersCollection.insertMany(docs);
     res.json({
@@ -80,7 +108,6 @@ const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedData = req.body;
-
     if (!id) {
       return res.status(400).json({ message: 'id is required' });
     }
@@ -88,7 +115,7 @@ const updateUser = async (req, res) => {
     const usersCollection = getCollection('users');
 
     const result = await usersCollection.updateOne(
-      { _id: new ObjectId(id) },
+      {$or:[{_id: new ObjectId(id)},{_id:id}]  },
       { $set: updatedData }
     );
 
@@ -100,6 +127,27 @@ const updateUser = async (req, res) => {
   } catch (error) {
     console.error('❌ Error updating user:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET: Get message from users
+const getMessagedUsers = async (req, res) => {
+  try {
+    const messageCollection = getCollection('messages');
+    const userCollection = getCollection('users');
+
+    // Get unique senderIds who sent a message
+    const senderIds = await messageCollection.distinct('senderId');
+
+    // Get user details for those senderIds
+    const users = await userCollection
+      .find({ _id: { $in: senderIds }, role: 'user' })
+      .toArray();
+
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to load users' });
   }
 };
 
@@ -127,12 +175,12 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// DELETE: Delete full collection
-const deleteAll = async (req, res) => {
+// DELETE: Delete all users
+const deleteAllUsers = async (req, res) => {
   try {
-    const DeleteCollection = getCollection('users');
+    const usersCollection = getCollection('users');
 
-    const result = await DeleteCollection.deleteMany({});
+    const result = await usersCollection.deleteMany({});
     res.json({
       message: `Deleted ${result.deletedCount} documents from users collection`,
     });
@@ -142,120 +190,14 @@ const deleteAll = async (req, res) => {
   }
 };
 
-// USERS RIDE RELATED CONTROLLERS:
-// POST: User ride requests
-const rideRequest = async (req, res) => {
-  try {
-    // Rider & Ride collection
-    const ridersCollection = getCollection('riders');
-    const ridesCollection = getCollection('rides');
-
-    const { userId, pickup, drop, vehicleType, fare } = req.body;
-
-    // Validate input
-    if (!userId || !pickup || !drop || !vehicleType || !fare) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    // nearest rider search using geoNear
-    const riders = await ridersCollection
-      .aggregate([
-        {
-          $geoNear: {
-            near: pickup, // { type: 'Point', coordinates: [lng, lat] }
-            distanceField: 'distance',
-            spherical: true,
-            maxDistance: 5000, // ৫ কিমি
-          },
-        },
-        {
-          $match: {
-            status: 'online',
-            vehicleType: vehicleType,
-          },
-        },
-        { $limit: 1 },
-      ])
-      .toArray();
-
-    if (riders.length === 0) {
-      return res.status(404).json({ message: 'No rider found nearby' });
-    }
-
-    const rider = riders[0];
-
-    // Ride document with default fields
-    const ride = {
-      userId: new ObjectId(userId),
-      riderId: new ObjectId(rider._id),
-      pickup,
-      drop,
-      fare,
-      vehicleType,
-      status: 'pending',
-      createdAt: new Date(),
-      acceptedAt: null,
-      rejectedAt: null,
-      cancelledAt: null,
-      liveLocation: null,
-      distance: rider.distance || null,
-      riderInfo: {
-        fullName: rider.fullName || null,
-        vehicleType: rider.vehicleType || null,
-        vehicleModel: rider.vehicleModel || null,
-        vehicleRegisterNumber: rider.vehicleRegisterNumber || null,
-        email: rider.email || null,
-      },
-    };
-
-    // Insert ride into rides collection
-    const result = await ridesCollection.insertOne(ride);
-
-    // TODO: Socket.IO: notify rider in real-time
-    // io.to(rider._id.toString()).emit('ride-request', ride);
-
-    // Send email to rider
-    await transporter.sendMail({
-      from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-      to: rider.email,
-      subject: 'New Ride Request',
-      html: `
-        <h2>New Ride Request</h2>
-        <p>Hello ${rider.fullName || 'Rider'},</p>
-        <p>You have a new ride request from user ${userId}.</p>
-        <ul>
-          <li><strong>Pickup:</strong> ${pickup.coordinates.join(', ')}</li>
-          <li><strong>Drop:</strong> ${drop.coordinates.join(', ')}</li>
-          <li><strong>Fare:</strong> ${fare}</li>
-        </ul>
-        <p>Please check your dashboard or app to accept or reject this request.</p>
-      `,
-    });
-
-    // Response to frontend
-    res.status(201).json({
-      success: true,
-      rideId: result.insertedId,
-      rider: {
-        _id: rider._id,
-        fullName: rider.fullName,
-        vehicleType: rider.vehicleType,
-        distance: rider.distance,
-      },
-    });
-  } catch (error) {
-    console.error('Ride request error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
 module.exports = {
   getAllNIds,
   getAllUsers,
   getSingleUser,
+  getSingleRiderByUserId,
   insertUsers,
   updateUser,
+  getMessagedUsers,
   deleteUser,
-  deleteAll,
-  rideRequest,
+  deleteAllUsers,
 };
