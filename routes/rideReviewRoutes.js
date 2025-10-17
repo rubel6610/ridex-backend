@@ -4,7 +4,7 @@ const {
   createRideReview,
   getRiderReviews,
   getAllRideReviews,
-  updateRiderReviews,
+  updateRiderReviews
 } = require('../controllers/rideReviewController');
 
 // POST => create a review
@@ -18,5 +18,8 @@ router.get('/rider/:riderId', getRiderReviews);
 
 // GET => all ride reviews (for admin)
 router.get('/', getAllRideReviews);
+
+// Update => rider reviews
+router.put('/update', updateRiderReviews)
 
 module.exports = router;

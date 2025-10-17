@@ -17,7 +17,7 @@ const getAllRides = async (req, res) => {
   }
 };
 
-// GET: Get all available rides with rideId
+// GET: Get all available rides with riderId
 const getAvailableRide = async (req, res) => {
   try {
     const riderId = req.params.riderId;
@@ -72,26 +72,32 @@ const getCurrentRide = async (req, res) => {
   }
 };
 
-const reverseGeocode = async (req, res) => {
+// GET: Get specific rider and ride by rider ID
+const getSpecificRide = async (req, res) => {
   try {
-    const { lat, lon } = req.query;
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
-    );
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error('Reverse geocode error:', error);
-    if (error.name === 'AbortError') {
-      return res.status(408).json({ error: 'Request timed out' });
+    const riderId = req.params.riderId;
+    console.log(riderId);
+    const ridersCollection = getCollection('riders');
+    const ridesCollection = getCollection('rides');
+
+    // find the rider document first
+    const rider = await ridersCollection.findOne({
+      userId: riderId,
+    });
+
+    if (!rider) {
+      return res.status(404).json({ message: 'Rider not found' });
     }
-    res.status(500).json({ error: 'Failed to fetch location' });
+
+    // now find rides for that rider
+    const rides = await ridesCollection.find({ riderId: rider._id }).toArray();
+
+    res.json({ rides, rider });
+  } catch (err) {
+    console.error('Ride fetch error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-
-
-
-
 
 // POST: Insert many rides
 const insertRides = async (req, res) => {
@@ -611,6 +617,7 @@ module.exports = {
   getAllRides,
   getAvailableRide,
   getCurrentRide,
+  getSpecificRide,
   insertRides,
   deleteAllRides,
   requestStatus,
@@ -619,5 +626,4 @@ module.exports = {
   acceptRide,
   rejectRide,
   rideRequest,
-  reverseGeocode
 };
