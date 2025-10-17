@@ -32,6 +32,7 @@ const rideRoutes = require('./routes/rideRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const rideReviewRoutes = require('./routes/rideReviewRoutes');
+const geoCodeRoutes = require('./routes/geoCodeRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 
 // Default route
@@ -49,6 +50,7 @@ app.use('/api', riderManageRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/support', supportRoutes);
 app.use('/api/ride-reviews', rideReviewRoutes);
+app.use('/api', geoCodeRoutes);
 app.use('/api', promotionRoutes);
 
 // Start server
