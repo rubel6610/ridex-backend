@@ -114,7 +114,7 @@ const successPayment = async (req, res) => {
     console.log('✅ SSLCommerz Success Data:', req.body);
 
     const { tran_id, value_a, value_b, value_c, amount } = req.body;
-
+    console.log(tran_id);
     const rideId = value_a;
     const userId = value_b;
     const riderId = value_c;

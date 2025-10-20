@@ -1,33 +1,91 @@
-// socket/socket.js
 const { Server } = require('socket.io');
+const { getCollection } = require('../utils/getCollection');
+const { ObjectId } = require('mongodb');
 
-let io;
+let io = null;
 
 function initSocket(server) {
   io = new Server(server, {
     cors: {
-      origin: ['http://localhost:3000', 'http://localhost:3001',process.env.CLIENT_URL], 
-      methods: ['GET', 'POST'],
-    },
+      origin: process.env.CLIENT_URL || "http://localhost:3000",
+      methods: ["GET", "POST"]
+    }
   });
 
   io.on('connection', (socket) => {
-    console.log('⚡ New socket connected:', socket.id);
+    console.log('User connected:', socket.id);
 
-    // ইউজার join করবে
-    socket.on('register_user', (userId) => {
+    socket.on('join_user', (userId) => {
       socket.join(`user_${userId}`);
-      console.log(`👤 User ${userId} joined room user_${userId}`);
+      console.log(`User ${userId} joined room user_${userId}`);
     });
 
-    // এডমিন join করবে
-    socket.on('register_admin', () => {
+    socket.on('join_admin', (adminId) => {
       socket.join('admins');
-      console.log('🛡️ Admin joined admins room');
+      console.log(`Admin ${adminId} joined admins room`);
+    });
+
+    // Typing indicators
+    socket.on('user_typing_start', async (data) => {
+      try {
+        const threads = getCollection('support_threads');
+        const thread = await threads.findOne({ _id: new ObjectId(data.threadId) });
+        if (thread) {
+          socket.to('admins').emit('user_typing_start', {
+            threadId: data.threadId,
+            userId: thread.userId
+          });
+        }
+      } catch (error) {
+        console.error('Error in user_typing_start:', error);
+      }
+    });
+
+    socket.on('user_typing_stop', async (data) => {
+      try {
+        const threads = getCollection('support_threads');
+        const thread = await threads.findOne({ _id: new ObjectId(data.threadId) });
+        if (thread) {
+          socket.to('admins').emit('user_typing_stop', {
+            threadId: data.threadId,
+            userId: thread.userId
+          });
+        }
+      } catch (error) {
+        console.error('Error in user_typing_stop:', error);
+      }
+    });
+
+    socket.on('admin_typing_start', async (data) => {
+      try {
+        const threads = getCollection('support_threads');
+        const thread = await threads.findOne({ _id: new ObjectId(data.threadId) });
+        if (thread) {
+          socket.to(`user_${thread.userId}`).emit('admin_typing_start', {
+            threadId: data.threadId
+          });
+        }
+      } catch (error) {
+        console.error('Error in admin_typing_start:', error);
+      }
+    });
+
+    socket.on('admin_typing_stop', async (data) => {
+      try {
+        const threads = getCollection('support_threads');
+        const thread = await threads.findOne({ _id: new ObjectId(data.threadId) });
+        if (thread) {
+          socket.to(`user_${thread.userId}`).emit('admin_typing_stop', {
+            threadId: data.threadId
+          });
+        }
+      } catch (error) {
+        console.error('Error in admin_typing_stop:', error);
+      }
     });
 
     socket.on('disconnect', () => {
-      console.log('❌ Disconnected:', socket.id);
+      console.log('User disconnected:', socket.id);
     });
   });
 
@@ -35,7 +93,13 @@ function initSocket(server) {
 }
 
 function getIO() {
+  if (!io) {
+    throw new Error("Socket.io not initialized!");
+  }
   return io;
 }
 
-module.exports = { initSocket, getIO };
+module.exports = {
+  initSocket,
+  getIO
+};
