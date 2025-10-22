@@ -4,28 +4,40 @@ const { ObjectId } = require('mongodb');
 
 async function userSendMessage(req, res) {
   try {
-    const { userId, text } = req.body;
+    const { userId, text, userType } = req.body; // Added userType
     if (!userId || !text) return res.status(400).json({ error: 'userId and text required' });
 
     const threads = getCollection('support_threads');
     const users = getCollection('users');
+    const riders = getCollection('riders');
 
     const msg = { 
-      sender: 'user', 
+      sender: userType === 'rider' ? 'rider' : 'user', // Support both
       text, 
       createdAt: new Date(),
       _id: new ObjectId()
     };
 
-    // Get user data
-    const userData = await users.findOne({ _id: new ObjectId(userId) });
+    // Get user/rider data based on type
+    let userData;
+    if (userType === 'rider') {
+      // Find rider first, then get user data
+      const riderData = await riders.findOne({ userId: userId });
+      if (riderData) {
+        userData = await users.findOne({ _id: new ObjectId(userId) });
+        userData = { ...userData, isRider: true, riderId: riderData._id };
+      }
+    } else {
+      userData = await users.findOne({ _id: new ObjectId(userId) });
+    }
     
-    let thread = await threads.findOne({ userId });
+    let thread = await threads.findOne({ userId, userType: userType || 'user' });
 
     if (!thread) {
       const doc = {
         userId,
-        userName: userData?.fullName || `User ${userId}`,
+        userType: userType || 'user', // Track if rider or user
+        userName: userData?.fullName || `${userType === 'rider' ? 'Rider' : 'User'} ${userId}`,
         userPhoto: userData?.photoUrl || null,
         messages: [msg],
         lastMessage: text,
@@ -57,11 +69,11 @@ async function userSendMessage(req, res) {
     // Notify all admins with user data
     io.to('admins').emit('new_support_thread', {
       ...thread,
-      userName: userData?.fullName || `User ${userId}`,
+      userName: userData?.fullName || `${userType === 'rider' ? 'Rider' : 'User'} ${userId}`,
       userPhoto: userData?.photoUrl || null
     });
     
-    // Send updated thread to user
+    // Send updated thread to user/rider
     io.to(`user_${userId}`).emit('thread_updated', { thread });
 
     return res.json({ thread });
@@ -74,16 +86,20 @@ async function userSendMessage(req, res) {
 async function getThreadForUser(req, res) {
   try {
     const { userId } = req.params;
+    const { userType } = req.query; // Get userType from query
     const threads = getCollection('support_threads');
     const users = getCollection('users');
     
-    const thread = await threads.findOne({ userId });
+    const thread = await threads.findOne({ 
+      userId, 
+      userType: userType || 'user' 
+    });
     
     // Enrich thread with user data
     if (thread) {
       try {
         const userData = await users.findOne({ _id: new ObjectId(thread.userId) });
-        thread.userName = userData?.fullName || `User ${thread.userId}`;
+        thread.userName = userData?.fullName || `${thread.userType === 'rider' ? 'Rider' : 'User'} ${thread.userId}`;
         thread.userPhoto = userData?.photoUrl || null;
       } catch (error) {
         console.error('Error fetching user data:', error);

@@ -52,6 +52,69 @@ const getPromotions = async (req, res) => {
   }
 };
 
+// ✅ GET: Get active promotions (for users)
+const getActivePromotions = async (req, res) => {
+  try {
+    const promotionsCollection = getCollection('promotions');
+    const now = new Date();
+    
+    const activePromotions = await promotionsCollection.find({
+      status: 'Active',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).toArray();
+    
+    res.status(200).json(activePromotions);
+  } catch (error) {
+    console.error('❌ Error fetching active promotions:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// ✅ POST: Validate and apply promo code
+const validatePromoCode = async (req, res) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ message: 'Promo code is required' });
+    }
+
+    const promotionsCollection = getCollection('promotions');
+    const now = new Date();
+    
+    const promo = await promotionsCollection.findOne({
+      code: code,
+      status: 'Active',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
+    
+    if (!promo) {
+      return res.status(404).json({ 
+        valid: false,
+        message: 'Invalid or expired promo code' 
+      });
+    }
+
+    // Increment usage count
+    await promotionsCollection.updateOne(
+      { _id: promo._id },
+      { $inc: { usage: 1 } }
+    );
+    
+    res.status(200).json({ 
+      valid: true,
+      discount: promo.discount,
+      code: promo.code,
+      title: promo.title
+    });
+  } catch (error) {
+    console.error('❌ Error validating promo code:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // 🟠 GET: Get single promotion by ID
 const getSinglePromotion = async (req, res) => {
   try {
@@ -147,6 +210,8 @@ const deleteAllPromotions = async (req, res) => {
 module.exports = {
   createPromotion,
   getPromotions,
+  getActivePromotions,
+  validatePromoCode,
   getSinglePromotion,
   updatePromotion,
   deletePromotion,
