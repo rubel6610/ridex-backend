@@ -45,7 +45,6 @@ function initSocket(server) {
       console.log(`${userType} ${userId} left ride chat room: ride_${rideId}`);
     });
 
-    // Send ride chat message
     socket.on('send_ride_message', async (data) => {
       try {
         const { rideId, senderId, senderType, message, timestamp } = data;
@@ -58,17 +57,15 @@ function initSocket(server) {
           return;
         }
 
-        // Create message object
         const chatMessage = {
           id: new ObjectId().toString(),
           senderId,
-          senderType, // 'user' or 'rider'
+          senderType,
           text: message,
           timestamp: timestamp || new Date().toISOString(),
           read: false
         };
 
-        // Update ride document with new message
         await rides.updateOne(
           { _id: new ObjectId(rideId) },
           { 
@@ -78,11 +75,28 @@ function initSocket(server) {
           }
         );
 
-        // Emit message to all users in the ride chat room
         io.to(`ride_${rideId}`).emit('receive_ride_message', {
           rideId,
           message: chatMessage
         });
+
+        if (senderType === 'user' && ride.riderId) {
+          io.to(`rider_${ride.riderId.toString()}`).emit('new_message_notification', {
+            rideId,
+            from: 'passenger',
+            message: message.substring(0, 50),
+            timestamp: chatMessage.timestamp
+          });
+        }
+
+        if (senderType === 'rider' && ride.userId) {
+          io.to(`user_${ride.userId}`).emit('new_message_notification', {
+            rideId,
+            from: 'rider',
+            message: message.substring(0, 50),
+            timestamp: chatMessage.timestamp
+          });
+        }
 
         console.log(`Message sent in ride ${rideId} from ${senderType} ${senderId}`);
       } catch (error) {
