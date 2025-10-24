@@ -13,7 +13,7 @@ const server = http.createServer(app);
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', process.env.CLIENT_URL],
+  origin: ['http://localhost:3000','http://192.168.0.107:3000', 'http://localhost:3001', process.env.CLIENT_URL],
   credentials: true,
 }));  
 app.use(express.json());
@@ -22,7 +22,6 @@ initSocket(server);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Import Routes
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const riderRoutes = require('./routes/riderRoutes');
@@ -34,13 +33,13 @@ const supportRoutes = require('./routes/supportRoutes');
 const rideReviewRoutes = require('./routes/rideReviewRoutes');
 const geoCodeRoutes = require('./routes/geoCodeRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 // Default route
 app.get('/', (req, res) => {
   res.send('🚀 Server is running...');
 });
 
-// ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes);
 app.use('/api', rideRoutes);
@@ -52,6 +51,7 @@ app.use('/support', supportRoutes);
 app.use('/api/ride-reviews', rideReviewRoutes);
 app.use('/api', geoCodeRoutes);
 app.use('/api', promotionRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;

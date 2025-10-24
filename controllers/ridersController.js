@@ -15,6 +15,10 @@ const becomeRider = async (req, res) => {
       vehicleModel,
       vehicleRegisterNumber,
       drivingLicense,
+      frontFace, // Optional single image identity verification
+      leftPose,  // Optional 3-step face verification
+      rightPose,
+      frontPose,
     } = req.body;
 
     // Find user by ID
@@ -64,12 +68,27 @@ const becomeRider = async (req, res) => {
       vehicleRegisterNumber,
       drivingLicense,
       password: hashedPassword,
-      status: 'offline',
+      status: 'pending',
       location: null,
       ongoingTripId: null,
       lastUpdated: null,
       createdAt: new Date(),
     };
+
+    // Add frontFace if provided (identity verification)
+    if (frontFace) {
+      riderData.frontFace = frontFace;
+    }
+    
+    // Add 3-step face verification if provided
+    if (leftPose && rightPose && frontPose) {
+      riderData.faceVerification = {
+        leftPose,
+        rightPose,
+        frontPose,
+        verifiedAt: new Date(),
+      };
+    }
 
     // Insert into riders collection
     const result = await ridersCollection.insertOne(riderData);
@@ -82,9 +101,14 @@ const becomeRider = async (req, res) => {
       );
     }
 
-    res.status(201).json({ message: 'Rider request submitted!' });
+    console.log('✅ Rider created:', result.insertedId);
+
+    res.status(201).json({ 
+      message: 'Rider request submitted!',
+      rider: { ...riderData, _id: result.insertedId }
+    });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Error in becomeRider:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
