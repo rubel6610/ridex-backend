@@ -13,6 +13,9 @@ const {
   acceptRide,
   rejectRide,
   rideRequest,
+  getRideChatMessages,
+  cancelRideRequest,
+  completeRide,
 } = require('../controllers/ridesController');
 
 // COMMON ROUTES
@@ -32,5 +35,10 @@ router.post('/req/ride-reject', rejectRide);
 
 // USER ROUTES
 router.post('/request', rideRequest);
+router.post('/ride/cancel', cancelRideRequest);
+router.post('/ride/complete', completeRide);
+
+// CHAT ROUTES
+router.get('/ride/:rideId/chat', getRideChatMessages);
 
 module.exports = router;
