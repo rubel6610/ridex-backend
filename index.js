@@ -13,7 +13,7 @@ const server = http.createServer(app);
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000','http://192.168.0.107:3000', 'http://localhost:3001', process.env.CLIENT_URL],
+  origin: ['http://localhost:3000','http://192.168.0.107:3000',"https://nominatim.openstreetmap.org", 'http://localhost:3001', process.env.CLIENT_URL],
   credentials: true,
 }));  
 app.use(express.json());
@@ -34,6 +34,7 @@ const rideReviewRoutes = require('./routes/rideReviewRoutes');
 const geoCodeRoutes = require('./routes/geoCodeRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const chatBotRoutes = require('./routes/chatBotRoutes');
 
 // Default route
 app.get('/', (req, res) => {
@@ -52,6 +53,7 @@ app.use('/api/ride-reviews', rideReviewRoutes);
 app.use('/api', geoCodeRoutes);
 app.use('/api', promotionRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use("/api", chatBotRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
