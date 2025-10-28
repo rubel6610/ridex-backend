@@ -1,12 +1,9 @@
 const express = require('express');
-const { generateBlog, generateImage, saveBlog, getBlogs, getBlogById, deleteBlog } = require('../controllers/blogController');
+const { generateBlog, saveBlog, getBlogs, getBlogById, deleteBlog } = require('../controllers/blogController');
 const router = express.Router();
 
 // POST: Generate blog content using AI
 router.post('/generate-blog', generateBlog);
-
-// POST: Generate Bangladesh ride-sharing image
-router.post('/generate-image', generateImage);
 
 // POST: Save blog to database
 router.post('/save-blog', saveBlog);

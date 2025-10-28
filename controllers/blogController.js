@@ -1,5 +1,4 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const axios = require("axios");
 const { getCollection } = require("../utils/getCollection");
 
 // POST: Generate blog content using Gemini AI (no fallback to mock data)
@@ -67,8 +66,7 @@ Create a realistic JSON response for a blog post about "${cleanContext}" focused
 Use exactly this JSON format:
 {
   "title": "A natural and engaging blog title about ${cleanContext} in Bangladesh's ride-sharing industry",
-  "description": "A 3-4 sentence professional description about ${cleanContext}, focusing on how ride-sharing platforms like car, bike, and CNG rides are shaping Bangladesh's urban transportation and daily commuting.",
- "imagePrompt": "A detailed prompt for generating an image about ${cleanContext} with cars, drivers, passengers in urban settings"
+  "description": "A 3-4 sentence professional description about ${cleanContext}, focusing on how ride-sharing platforms like car, bike, and CNG rides are shaping Bangladesh's urban transportation and daily commuting."
 }
 `;
 
@@ -98,7 +96,7 @@ Use exactly this JSON format:
       blogData = JSON.parse(jsonString);
       
       // Validate that we have the required fields
-      if (!blogData.title || !blogData.description || !blogData.imagePrompt) {
+      if (!blogData.title || !blogData.description) {
         throw new Error("Missing required fields in AI response");
       }
       
@@ -136,95 +134,6 @@ Use exactly this JSON format:
     return res.status(200).json({
       success: false,
       message: "AI service unavailable. Please try again later."
-    });
-  }
-};
-
-// POST: Generate Bangladesh ride-sharing image
-const generateImage = async (req, res) => {
-  try {
-    const { prompt } = req.body;
-
-    if (!prompt) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Prompt is required" 
-      });
-    }
-
-    if (!process.env.HUGGINGFACE_IMAGE_API_KEY) {
-      return res.status(500).json({ 
-        success: false, 
-        message: "Hugging Face API key not configured" 
-      });
-    }
-
-    // Enhance prompt for Bangladesh ride-sharing
-    const bangladeshTerms = [
-      "Dhaka street", "Bangladeshi CNG auto-rickshaw", "ride-sharing car",
-      "Bangladesh urban transport", "bike taxi", "local traffic", "passengers and drivers"
-    ];
-
-    const enhancedPrompt = `${prompt} ${bangladeshTerms[Math.floor(Math.random() * bangladeshTerms.length)]} realistic, urban Bangladesh ride-sharing scene`;
-
-    // Call Hugging Face Stable Diffusion model
-    const response = await axios.post(
-      "https://api-inference.huggingface.co/models/prompthero/openjourney",
-      { inputs: enhancedPrompt },
-      {
-        headers: {
-          "Authorization": `Bearer ${process.env.HUGGINGFACE_IMAGE_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        responseType: 'arraybuffer'
-      }
-    );
-
-    const base64Image = Buffer.from(response.data).toString('base64');
-    const imageUrl = `data:image/jpeg;base64,${base64Image}`;
-
-    return res.status(200).json({
-      success: true,
-      imageUrl,
-      message: "AI-generated Bangladesh ride-sharing image"
-    });
-
-  } catch (error) {
-    // Handle specific Hugging Face errors
-    if (error.response && error.response.status === 401) {
-      return res.status(200).json({
-        success: false,
-        message: "Hugging Face API key invalid. Using fallback image.",
-        imageUrl: `https://picsum.photos/800/600?random=${Date.now() % 1000}`
-      });
-    }
-    
-    // Handle model loading errors (common with free Hugging Face models)
-    if (error.response && error.response.status === 503) {
-      return res.status(200).json({
-        success: false,
-        message: "Hugging Face model is loading. Using fallback image.",
-        imageUrl: `https://picsum.photos/800/600?random=${Date.now() % 1000}`
-      });
-    }
-
-    // fallback to placeholder image if HF fails
-    const hashFunction = (str) => {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i) + Date.now();
-        hash = hash & hash;
-      }
-      return Math.abs(hash);
-    };
-
-    const imageId = (hashFunction(req.body.prompt) % 1000) + 1;
-    const placeholderImageUrl = `https://picsum.photos/800/600?random=${imageId}`;
-
-    return res.status(200).json({
-      success: true,
-      imageUrl: placeholderImageUrl,
-      message: "Fallback image used due to AI generation limit/error"
     });
   }
 };
@@ -394,7 +303,6 @@ const deleteBlog = async (req, res) => {
 
 module.exports = {
   generateBlog,
-  generateImage,
   saveBlog,
   getBlogs,
   getBlogById,
