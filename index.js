@@ -13,14 +13,17 @@ const server = http.createServer(app);
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', process.env.CLIENT_URL],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://192.168.1.102:3000', process.env.CLIENT_URL],
   credentials: true,
-}));  
-app.use(express.json());
-initSocket(server);
+}));
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+// Body parser with increased limit for image uploads (must be before routes)
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ limit: "100mb", extended: true }));
+app.use(bodyParser.json({ limit: "100mb" }));
+app.use(bodyParser.urlencoded({ limit: "100mb", extended: true }));
+
+initSocket(server);
 
 // Import Routes
 const userRoutes = require('./routes/userRoutes');
@@ -34,6 +37,7 @@ const supportRoutes = require('./routes/supportRoutes');
 const rideReviewRoutes = require('./routes/rideReviewRoutes');
 const geoCodeRoutes = require('./routes/geoCodeRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 
 // Default route
 app.get('/', (req, res) => {
@@ -52,9 +56,10 @@ app.use('/support', supportRoutes);
 app.use('/api/ride-reviews', rideReviewRoutes);
 app.use('/api', geoCodeRoutes);
 app.use('/api', promotionRoutes);
+app.use('/api', blogRoutes);
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 
 (async () => {
   try {
@@ -70,4 +75,3 @@ const PORT = process.env.PORT || 5000;
     process.exit(1);
   }
 })();
- 
