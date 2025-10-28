@@ -11,10 +11,8 @@
 
 ## 🌐 Project Links
 
-- **Live API**: [Coming Soon]
-- **Frontend Repository**: [GitHub - RideX Frontend](https://github.com/yourusername/ridex-frontend)
-- **Backend Repository**: [GitHub - RideX Backend](https://github.com/yourusername/ridex-backend)
-- **API Documentation**: [Coming Soon]
+- **Frontend Repository**: [GitHub - RideX Frontend](https://github.com/rubel6610/RideX-Frontend)
+- **Backend Repository**: [GitHub - RideX Backend](https://github.com/rubel6610/ridex-backend)
 
 ---
 
