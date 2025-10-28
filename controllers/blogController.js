@@ -41,10 +41,10 @@ const generateBlog = async (req, res) => {
       try {
         model = genAI.getGenerativeModel({ model: modelName });
         selectedModel = modelName;
-        console.log(`Successfully loaded model: ${modelName}`);
+        // Successfully loaded model - no console output needed
         break;
       } catch (modelError) {
-        console.log(`Model ${modelName} not available, trying next model`);
+        // Model not available, continue to next - no console output needed
         continue;
       }
     }
@@ -60,15 +60,17 @@ const generateBlog = async (req, res) => {
     // Clean context to remove attempt indicators
     const cleanContext = context.replace(/\s*\(attempt\s*\d+\)/gi, "").trim();
 
-    // Create a simple, reliable prompt
-    const prompt = `Create a JSON response for a blog post about "${cleanContext}" in the ride-sharing industry. Use exactly this format:
-{
-  "title": "A descriptive title about ${cleanContext}",
-  "description": "A 3-4 sentence description about ${cleanContext} in ride-sharing",
-  "imagePrompt": "A detailed prompt for generating an image about ${cleanContext} with cars, drivers, passengers in urban settings"
-}
+// More refined, Bangladesh-specific prompt for Gemini
+const prompt = `
+Create a realistic JSON response for a blog post about "${cleanContext}" focused on the **ride-sharing and transportation system in Bangladesh**.
 
-Focus on ${cleanContext} specifically. Keep it concise and relevant to ride-sharing services.`;
+Use exactly this JSON format:
+{
+  "title": "A natural and engaging blog title about ${cleanContext} in Bangladesh's ride-sharing industry",
+  "description": "A 3-4 sentence professional description about ${cleanContext}, focusing on how ride-sharing platforms like car, bike, and CNG rides are shaping Bangladesh's urban transportation and daily commuting.",
+ "imagePrompt": "A detailed prompt for generating an image about ${cleanContext} with cars, drivers, passengers in urban settings"
+}
+`;
 
     // Generate content using Gemini with timeout
     const result = await Promise.race([
@@ -115,8 +117,6 @@ Focus on ${cleanContext} specifically. Keep it concise and relevant to ride-shar
       });
     }
   } catch (error) {
-    console.error("Blog generation error:", error);
-    
     // Check for specific error types
     if (error.message && error.message.includes("quota")) {
       return res.status(200).json({
@@ -140,7 +140,7 @@ Focus on ${cleanContext} specifically. Keep it concise and relevant to ride-shar
   }
 };
 
-// POST: Generate image using ImgBB
+// POST: Generate Bangladesh ride-sharing image
 const generateImage = async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -152,33 +152,79 @@ const generateImage = async (req, res) => {
       });
     }
 
-    // First generate image using Picsum as placeholder
-    const hash = (str) => {
+    if (!process.env.HUGGINGFACE_IMAGE_API_KEY) {
+      return res.status(500).json({ 
+        success: false, 
+        message: "Hugging Face API key not configured" 
+      });
+    }
+
+    // Enhance prompt for Bangladesh ride-sharing
+    const bangladeshTerms = [
+      "Dhaka street", "Bangladeshi CNG auto-rickshaw", "ride-sharing car",
+      "Bangladesh urban transport", "bike taxi", "local traffic", "passengers and drivers"
+    ];
+
+    const enhancedPrompt = `${prompt} ${bangladeshTerms[Math.floor(Math.random() * bangladeshTerms.length)]} realistic, urban Bangladesh ride-sharing scene`;
+
+    // Call Hugging Face Stable Diffusion model
+    const response = await axios.post(
+      "https://api-inference.huggingface.co/models/prompthero/openjourney",
+      { inputs: enhancedPrompt },
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.HUGGINGFACE_IMAGE_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        responseType: 'arraybuffer'
+      }
+    );
+
+    const base64Image = Buffer.from(response.data).toString('base64');
+    const imageUrl = `data:image/jpeg;base64,${base64Image}`;
+
+    return res.status(200).json({
+      success: true,
+      imageUrl,
+      message: "AI-generated Bangladesh ride-sharing image"
+    });
+
+  } catch (error) {
+    // Handle specific Hugging Face errors
+    if (error.response && error.response.status === 401) {
+      return res.status(200).json({
+        success: false,
+        message: "Hugging Face API key invalid. Using fallback image.",
+        imageUrl: `https://picsum.photos/800/600?random=${Date.now() % 1000}`
+      });
+    }
+    
+    // Handle model loading errors (common with free Hugging Face models)
+    if (error.response && error.response.status === 503) {
+      return res.status(200).json({
+        success: false,
+        message: "Hugging Face model is loading. Using fallback image.",
+        imageUrl: `https://picsum.photos/800/600?random=${Date.now() % 1000}`
+      });
+    }
+
+    // fallback to placeholder image if HF fails
+    const hashFunction = (str) => {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char + Date.now();
-        hash = hash & hash; // Convert to 32bit integer
+        hash = ((hash << 5) - hash) + str.charCodeAt(i) + Date.now();
+        hash = hash & hash;
       }
       return Math.abs(hash);
     };
-    
-    // Generate a unique image ID based on the prompt
-    const imageId = (hash(prompt) % 1000) + 1;
+
+    const imageId = (hashFunction(req.body.prompt) % 1000) + 1;
     const placeholderImageUrl = `https://picsum.photos/800/600?random=${imageId}`;
-    
-    // For now, we'll return the placeholder URL since we're not actually generating images
-    // In a real implementation, you would generate the image and upload it to ImgBB
+
     return res.status(200).json({
       success: true,
       imageUrl: placeholderImageUrl,
-      message: "Image URL generated"
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to generate image",
-      error: error.message 
+      message: "Fallback image used due to AI generation limit/error"
     });
   }
 };

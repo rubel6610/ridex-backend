@@ -5,7 +5,7 @@ const router = express.Router();
 // POST: Generate blog content using AI
 router.post('/generate-blog', generateBlog);
 
-// POST: Generate image using DeepAI
+// POST: Generate Bangladesh ride-sharing image
 router.post('/generate-image', generateImage);
 
 // POST: Save blog to database
