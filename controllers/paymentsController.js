@@ -1,6 +1,7 @@
 const SSLCommerzPayment = require('sslcommerz-lts');
 const { getCollection } = require('../utils/getCollection');
 const { ObjectId } = require('mongodb');
+const { getIO } = require('../socket/socket');
 require('dotenv').config({ quiet: true });
 
 const store_id = process.env.STORE_ID;
@@ -132,6 +133,51 @@ const successPayment = async (req, res) => {
         },
       }
     );
+
+    // Fetch user information for admin notification
+    let userName = 'Unknown User';
+    if (userId) {
+      try {
+        const usersCollection = getCollection('users');
+        const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+        userName = user?.fullName || user?.name || 'Unknown User';
+      } catch (userErr) {
+        console.error('Error fetching user info:', userErr);
+      }
+    }
+
+    // Create payment transaction record
+    try {
+      const paymentTransactions = getCollection('paymentTransactions');
+      await paymentTransactions.insertOne({
+        transactionId: tran_id,
+        userId: userId,
+        riderId: riderId,
+        amount: amount,
+        paidAt: new Date()
+      });
+    } catch (transactionErr) {
+      console.error('Error creating payment transaction record:', transactionErr);
+    }
+
+    // Notify admins about the successful payment
+    try {
+      const io = getIO();
+      const notificationData = {
+        userId,
+        userName,
+        amount,
+        transactionId: tran_id,
+        timestamp: new Date(),
+        message: `New payment of ৳${amount} received!`
+      };
+      
+      console.log('Emitting new_payment_notification to admins room with data:', notificationData);
+      io.to('admins').emit('new_payment_notification', notificationData);
+      console.log('Successfully emitted new_payment_notification');
+    } catch (socketErr) {
+      console.error('Error emitting payment notification:', socketErr);
+    }
 
     if (result.modifiedCount > 0) {
       const redirectUrl = `${process.env.CLIENT_URL}/dashboard/user/payment/success-review?paymentId=${tran_id}&rideId=${rideId}&userId=${userId}&riderId=${riderId}&amount=${amount}`;
