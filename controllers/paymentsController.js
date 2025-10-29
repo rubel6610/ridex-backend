@@ -11,8 +11,11 @@ const initPayment = async (req, res) => {
   try {
     const ridePay = getCollection('payments');
 
-    //Full ride payment info
+    // Map frontend data to backend structure
     const ridePayDoc = {
+      userEmail: req.body.userEmail,
+      riderEmail: req.body.riderEmail,
+
       rideId: req.body.rideId,
       userId: req.body.userId,
       riderId: req.body.riderId,
@@ -22,7 +25,7 @@ const initPayment = async (req, res) => {
       paymentMethod: 'SSLCommerz',
       transactionId: null,
       status: 'Pending',
-      riderPaid: 'Pending',
+      paid: false,
 
       rideDetails: {
         pickup: req.body.pickup || null,
@@ -35,12 +38,12 @@ const initPayment = async (req, res) => {
         rideType: req.body.mode || null,
 
         fareBreakdown: {
-          baseFare: req.body.baseFareNum || 0,
-          distanceFare: req.body.distanceFareNum || 0,
-          timeFare: req.body.timeFareNum || 0,
-          platformFee: req.body.feeNum || 0,
-          riderFee: req.body.riderPaymentNum || 0,
-          totalAmount: req.body.totalNum || 0,
+          baseFare: req.body.baseFare || 0,
+          distanceFare: req.body.distanceFare || 0,
+          timeFare: req.body.timeFare || 0,
+          platformCommission: req.body.platformCommission || 0,
+          riderCommission: req.body.riderCommission || 0,
+          totalAmount: req.body.amount || 0,
         },
       },
 
@@ -55,7 +58,7 @@ const initPayment = async (req, res) => {
 
     // sslcommerz init data
     const data = {
-      total_amount: req.body.totalNum ||  0,
+      total_amount: ridePayDoc.rideDetails.fareBreakdown.amount || 0,
       currency: 'BDT',
       tran_id: insertResult.insertedId.toString(),
       success_url: `${process.env.SERVER_BASE_URL}/api/payment/success`,
@@ -219,6 +222,38 @@ const getAllPayments = async (req, res) => {
   }
 };
 
+// NEW: Mark rider as paid
+const markRiderAsPaid = async (req, res) => {
+  try {
+    const { paymentId } = req.body;
+    
+    if (!paymentId) {
+      return res.status(400).json({ message: 'Payment ID is required' });
+    }
+
+    const paymentsCollection = getCollection('payments');
+    
+    const result = await paymentsCollection.updateOne(
+      { _id: new ObjectId(paymentId) },
+      { 
+        $set: { 
+          riderPaid: 'Paid',
+          riderPaidAt: new Date()
+        } 
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    res.status(200).json({ message: 'Rider marked as paid successfully' });
+  } catch (error) {
+    console.error('❌ Error marking rider as paid:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // GET: Get rider performance statistics
 const getRiderPerformanceStats = async (req, res) => {
   try {
@@ -363,4 +398,5 @@ module.exports = {
   cancelPayment,
   getAllPayments,
   getRiderPerformanceStats,
+  markRiderAsPaid,
 };
