@@ -11,22 +11,18 @@ const initPayment = async (req, res) => {
   try {
     const ridePay = getCollection('payments');
 
-    // ✅ Full ride payment info
+    //Full ride payment info
     const ridePayDoc = {
       rideId: req.body.rideId,
       userId: req.body.userId,
       riderId: req.body.riderId,
-
-      userName: req.body.userName,
-      userEmail: req.body.userEmail,
-      riderName: req.body.riderName || null,
-      riderEmail: req.body.riderEmail || null,
 
       promoCode: req.body.promo || null,
       currency: 'BDT',
       paymentMethod: 'SSLCommerz',
       transactionId: null,
       status: 'Pending',
+      riderPaid: 'Pending',
 
       rideDetails: {
         pickup: req.body.pickup || null,
@@ -42,7 +38,8 @@ const initPayment = async (req, res) => {
           baseFare: req.body.baseFareNum || 0,
           distanceFare: req.body.distanceFareNum || 0,
           timeFare: req.body.timeFareNum || 0,
-          tax: req.body.taxNum || 0,
+          platformFee: req.body.feeNum || 0,
+          riderFee: req.body.riderPaymentNum || 0,
           totalAmount: req.body.totalNum || 0,
         },
       },
@@ -66,7 +63,7 @@ const initPayment = async (req, res) => {
       cancel_url: `${process.env.SERVER_BASE_URL}/api/payment/cancel`,
       ipn_url: `${process.env.SERVER_BASE_URL}/api/payment/ipn`,
 
-      // ✅ send custom data the correct way
+      // send custom data the correct way
       value_a: req.body.rideId,
       value_b: req.body.userId,
       value_c: req.body.riderId,
@@ -111,7 +108,7 @@ const initPayment = async (req, res) => {
 
 const successPayment = async (req, res) => {
   try {
-    console.log('✅ SSLCommerz Success Data:', req.body);
+    console.log('SSLCommerz Success Data:', req.body);
 
     const { tran_id, value_a, value_b, value_c, amount } = req.body;
 

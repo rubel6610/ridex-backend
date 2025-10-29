@@ -15,8 +15,8 @@ const becomeRider = async (req, res) => {
       vehicleModel,
       vehicleRegisterNumber,
       drivingLicense,
-      frontFace, // Optional single image identity verification
-      leftPose,  // Optional 3-step face verification
+      verifyImage: frontFace, 
+      leftPose,  
       rightPose,
       frontPose,
     } = req.body;
