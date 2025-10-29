@@ -13,7 +13,7 @@ const server = http.createServer(app);
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', process.env.CLIENT_URL],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', process.env.CLIENT_URL],
   credentials: true,
 }));  
 app.use(express.json());
@@ -33,6 +33,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const rideReviewRoutes = require('./routes/rideReviewRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
+const complaintRoutes = require('./routes/complaintRoutes');
 
 // Default route
 app.get('/', (req, res) => {
@@ -50,6 +51,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/support', supportRoutes);
 app.use('/api/ride-reviews', rideReviewRoutes);
 app.use('/api', promotionRoutes);
+app.use('/api', complaintRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
@@ -61,11 +63,10 @@ const PORT = process.env.PORT || 5000;
     // const ridersCollection = getCollection('riders');
     // await ridersCollection.createIndex({ location: '2dsphere' });
 
-    // console.log('✅ 2dsphere index created on riders.location');
+    // console.log(' 2dsphere index created on riders.location');
     server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   } catch (err) {
     console.error('❌ Failed to connect DB:', err);
     process.exit(1);
   }
 })();
- 
