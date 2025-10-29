@@ -2,7 +2,7 @@ const { ObjectId } = require('mongodb');
 const { getCollection } = require('../utils/getCollection');
 
 
-// 🟢 POST: Create a new promotion
+//POST: Create a new promotion
 const createPromotion = async (req, res) => {
   try {
     const promotionsCollection = getCollection('promotions');
@@ -40,7 +40,7 @@ const createPromotion = async (req, res) => {
   }
 };
 
-// 🟡 GET: Get all promotions
+//GET: Get all promotions
 const getPromotions = async (req, res) => {
   try {
     const promotionsCollection = getCollection('promotions');
@@ -52,7 +52,70 @@ const getPromotions = async (req, res) => {
   }
 };
 
-// 🟠 GET: Get single promotion by ID
+//GET: Get active promotions (for users)
+const getActivePromotions = async (req, res) => {
+  try {
+    const promotionsCollection = getCollection('promotions');
+    const now = new Date();
+    
+    const activePromotions = await promotionsCollection.find({
+      status: 'Active',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).toArray();
+    
+    res.status(200).json(activePromotions);
+  } catch (error) {
+    console.error('❌ Error fetching active promotions:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+//POST: Validate and apply promo code
+const validatePromoCode = async (req, res) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ message: 'Promo code is required' });
+    }
+
+    const promotionsCollection = getCollection('promotions');
+    const now = new Date();
+    
+    const promo = await promotionsCollection.findOne({
+      code: code,
+      status: 'Active',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
+    
+    if (!promo) {
+      return res.status(404).json({ 
+        valid: false,
+        message: 'Invalid or expired promo code' 
+      });
+    }
+
+    // Increment usage count
+    await promotionsCollection.updateOne(
+      { _id: promo._id },
+      { $inc: { usage: 1 } }
+    );
+    
+    res.status(200).json({ 
+      valid: true,
+      discount: promo.discount,
+      code: promo.code,
+      title: promo.title
+    });
+  } catch (error) {
+    console.error('❌ Error validating promo code:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// GET: Get single promotion by ID
 const getSinglePromotion = async (req, res) => {
   try {
     const { id } = req.params;
@@ -77,7 +140,7 @@ const getSinglePromotion = async (req, res) => {
   }
 };
 
-// 🔵 PUT: Update promotion by ID
+// PUT: Update promotion by ID
 const updatePromotion = async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,7 +170,7 @@ const updatePromotion = async (req, res) => {
   }
 };
 
-// 🔴 DELETE: Delete promotion by ID
+//DELETE: Delete promotion by ID
 const deletePromotion = async (req, res) => {
   try {
     const { id } = req.params;
@@ -130,7 +193,7 @@ const deletePromotion = async (req, res) => {
   }
 };
 
-// ⚫ DELETE: Delete all promotions (for testing)
+//DELETE: Delete all promotions (for testing)
 const deleteAllPromotions = async (req, res) => {
   try {
     const promotionsCollection = getCollection('promotions');
@@ -147,6 +210,8 @@ const deleteAllPromotions = async (req, res) => {
 module.exports = {
   createPromotion,
   getPromotions,
+  getActivePromotions,
+  validatePromoCode,
   getSinglePromotion,
   updatePromotion,
   deletePromotion,

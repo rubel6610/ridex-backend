@@ -4,6 +4,7 @@ const {
   getAllRides,
   getAvailableRide,
   getCurrentRide,
+  getSpecificRide,
   insertRides,
   deleteAllRides,
   requestStatus,
@@ -12,14 +13,16 @@ const {
   acceptRide,
   rejectRide,
   rideRequest,
-  reverseGeocode,
+  getRideChatMessages,
+  cancelRideRequest,
+  completeRide,
 } = require('../controllers/ridesController');
 
 // COMMON ROUTES
 router.get('/rides', getAllRides);
 router.get('/rides/:riderId', getAvailableRide);
 router.get('/ride/:rideId', getCurrentRide);
-router.get('/reverse-geocode', reverseGeocode); 
+router.get('/specific-rider-ride/:riderId', getSpecificRide);
 router.post('/ride/insert-allRides', insertRides);
 router.delete('/ride/delete-allRides', deleteAllRides);
 
@@ -32,5 +35,10 @@ router.post('/req/ride-reject', rejectRide);
 
 // USER ROUTES
 router.post('/request', rideRequest);
+router.post('/ride/cancel', cancelRideRequest);
+router.post('/ride/complete', completeRide);
+
+// CHAT ROUTES
+router.get('/ride/:rideId/chat', getRideChatMessages);
 
 module.exports = router;

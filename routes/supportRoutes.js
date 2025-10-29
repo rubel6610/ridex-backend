@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const ctrl = require('../controllers/supportController');
+const {
+  userSendMessage,
+  getThreadForUser,
+  getThreadsForAdmin,
+  adminReply,
+  markAsRead
+} = require('../controllers/supportController');
 
-// User sends message
-router.post('/send', ctrl.userSendMessage);
-
-// Get user's current thread
-router.get('/thread/:userId', ctrl.getThreadForUser);
-
-// Admin: list threads (protected)
-router.get('/admin/threads', ctrl.getThreadsForAdmin);
-
-// Admin reply (protected)
-router.post('/admin/reply',  ctrl.adminReply);
+router.post('/send', userSendMessage);
+router.get('/thread/:userId', getThreadForUser);
+router.get('/admin/threads', getThreadsForAdmin);
+router.post('/admin/reply', adminReply);
+router.post('/admin/mark-read', markAsRead);
 
 module.exports = router;

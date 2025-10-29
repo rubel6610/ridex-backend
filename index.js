@@ -22,7 +22,6 @@ initSocket(server);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Import Routes
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const riderRoutes = require('./routes/riderRoutes');
@@ -32,15 +31,16 @@ const rideRoutes = require('./routes/rideRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const rideReviewRoutes = require('./routes/rideReviewRoutes');
+const geoCodeRoutes = require('./routes/geoCodeRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const complaintRoutes = require('./routes/complaintRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 // Default route
 app.get('/', (req, res) => {
   res.send('🚀 Server is running...');
 });
 
-// ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes);
 app.use('/api', rideRoutes);
@@ -50,8 +50,10 @@ app.use('/api', riderManageRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/support', supportRoutes);
 app.use('/api/ride-reviews', rideReviewRoutes);
+app.use('/api', geoCodeRoutes);
 app.use('/api', promotionRoutes);
 app.use('/api', complaintRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;
