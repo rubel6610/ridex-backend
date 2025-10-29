@@ -68,7 +68,7 @@ const becomeRider = async (req, res) => {
       vehicleRegisterNumber,
       drivingLicense,
       password: hashedPassword,
-      status: 'offline',
+      status: 'pending',
       location: null,
       ongoingTripId: null,
       lastUpdated: null,
