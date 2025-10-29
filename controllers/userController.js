@@ -30,16 +30,26 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// GET: Get single user by ID
+// GET: Get single user by ID or Email
 const getSingleUser = async (req, res) => {
   try {
-    const { email } = req.query;
+    const { userId, email } = req.query;
 
-    if (!email) {
-      return res.status(400).json({ message: 'User email required' });
+    console.log("ratul: ",userId, email);
+    
+    if (!userId && !email) {
+      return res.status(400).json({ message: 'User ID or email required' });
     }
+
     const usersCollection = getCollection('users');
-    const query = { email };
+    let query = {};
+
+    if (userId) {
+      query = { _id: new ObjectId(userId) };
+    } else if (email) {
+      query = { email };
+    }
+
     const singleUser = await usersCollection.findOne(query);
 
     if (!singleUser) {
@@ -107,7 +117,7 @@ const updateUser = async (req, res) => {
     const usersCollection = getCollection('users');
 
     const result = await usersCollection.updateOne(
-      {$or:[{_id: new ObjectId(id)},{_id:id}]  },
+      { $or: [{ _id: new ObjectId(id) }, { _id: id }] },
       { $set: updatedData }
     );
 
