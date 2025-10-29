@@ -109,10 +109,6 @@ const getCurrentRide = async (req, res) => {
 const getSpecificRide = async (req, res) => {
   try {
     const riderId = req.params.riderId;
-<<<<<<< HEAD
-    console.log(riderId);
-=======
->>>>>>> 91ff06d25dcf586ef694b7217bbad1b69e37902c
     const ridersCollection = getCollection('riders');
     const ridesCollection = getCollection('rides');
 
@@ -125,16 +121,11 @@ const getSpecificRide = async (req, res) => {
       return res.status(404).json({ message: 'Rider not found' });
     }
 
-<<<<<<< HEAD
-    // now find rides for that rider
-    const rides = await ridesCollection.find({ riderId: rider._id }).toArray();
-=======
     // now find only accepted rides for that rider (for ongoing rides page)
     const rides = await ridesCollection.find({ 
       riderId: rider._id,
       status: 'accepted' // Only return accepted rides for ongoing section
     }).toArray();
->>>>>>> 91ff06d25dcf586ef694b7217bbad1b69e37902c
 
     res.json({ rides, rider });
   } catch (err) {
@@ -143,10 +134,6 @@ const getSpecificRide = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 91ff06d25dcf586ef694b7217bbad1b69e37902c
 // POST: Insert many rides
 const insertRides = async (req, res) => {
   try {
