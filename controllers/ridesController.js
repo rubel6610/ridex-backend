@@ -653,6 +653,7 @@ const rideRequest = async (req, res) => {
         drop,
         fare,
         vehicleType,
+        promoCode: req.body.promoCode,
         status: 'pending',
         createdAt: new Date(),
         acceptedAt: null,
@@ -824,6 +825,68 @@ const cancelRideRequest = async (req, res) => {
   }
 };
 
+// POST: Update ride status to ongoing when rider starts the ride
+const startRide = async (req, res) => {
+  try {
+    const { rideId, riderId } = req.body;
+
+    if (!rideId || !riderId) {
+      return res.status(400).json({ message: 'rideId and riderId are required' });
+    }
+
+    const ridesCollection = getCollection('rides');
+    const ride = await ridesCollection.findOne({ _id: new ObjectId(rideId) });
+
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    // Check if ride is in accepted status
+    if (ride.status !== 'accepted') {
+      return res.status(400).json({ 
+        message: 'Ride must be in accepted status to start',
+        currentStatus: ride.status 
+      });
+    }
+
+    // Update ride status to ongoing
+    await ridesCollection.updateOne(
+      { _id: new ObjectId(rideId) },
+      { 
+        $set: { 
+          status: 'ongoing', 
+          startedAt: new Date()
+        } 
+      }
+    );
+
+    // Notify both user and rider via Socket.IO
+    const io = getIO();
+    io.to(`user_${ride.userId}`).emit('ride_started', {
+      rideId: rideId.toString(),
+      status: 'ongoing',
+      startedAt: new Date()
+    });
+    
+    if (ride.riderId) {
+      io.to(`rider_${ride.riderId.toString()}`).emit('ride_started', {
+        rideId: rideId.toString(),
+        status: 'ongoing',
+        startedAt: new Date()
+      });
+    }
+
+    return res.json({ 
+      success: true, 
+      message: 'Ride started successfully',
+      status: 'ongoing'
+    });
+  } catch (error) {
+    console.error('Start ride error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // POST: Update ride status to completed after payment
 const completeRide = async (req, res) => {
   try {
@@ -889,5 +952,6 @@ module.exports = {
   rideRequest,
   getRideChatMessages,
   cancelRideRequest,
+  startRide,
   completeRide,
 };

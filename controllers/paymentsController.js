@@ -11,22 +11,21 @@ const initPayment = async (req, res) => {
   try {
     const ridePay = getCollection('payments');
 
-    // ✅ Full ride payment info
+    // Map frontend data to backend structure
     const ridePayDoc = {
+      userEmail: req.body.userEmail,
+      riderEmail: req.body.riderEmail,
+
       rideId: req.body.rideId,
       userId: req.body.userId,
       riderId: req.body.riderId,
-
-      userName: req.body.userName,
-      userEmail: req.body.userEmail,
-      riderName: req.body.riderName || null,
-      riderEmail: req.body.riderEmail || null,
 
       promoCode: req.body.promo || null,
       currency: 'BDT',
       paymentMethod: 'SSLCommerz',
       transactionId: null,
       status: 'Pending',
+      paid: false,
 
       rideDetails: {
         pickup: req.body.pickup || null,
@@ -39,11 +38,12 @@ const initPayment = async (req, res) => {
         rideType: req.body.mode || null,
 
         fareBreakdown: {
-          baseFare: req.body.baseFareNum || 0,
-          distanceFare: req.body.distanceFareNum || 0,
-          timeFare: req.body.timeFareNum || 0,
-          tax: req.body.taxNum || 0,
-          totalAmount: req.body.totalNum || 0,
+          baseFare: req.body.baseFare || 0,
+          distanceFare: req.body.distanceFare || 0,
+          timeFare: req.body.timeFare || 0,
+          platformCommission: req.body.platformCommission || 0,
+          riderCommission: req.body.riderCommission || 0,
+          totalAmount: req.body.amount || 0,
         },
       },
 
@@ -55,10 +55,10 @@ const initPayment = async (req, res) => {
       },
     };
     const insertResult = await ridePay.insertOne(ridePayDoc);
-
+    console.log(req);
     // sslcommerz init data
     const data = {
-      total_amount: req.body.totalNum ||  0,
+      total_amount: req.body.amount ||  0,
       currency: 'BDT',
       tran_id: insertResult.insertedId.toString(),
       success_url: `${process.env.SERVER_BASE_URL}/api/payment/success`,
@@ -98,7 +98,7 @@ const initPayment = async (req, res) => {
     // sslcommerz initiating
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
     const apiResponse = await sslcz.init(data);
-    // console.log(apiResponse);
+    console.log(apiResponse);
 
     // Redirect the user to payment gateway
     res.json({ url: apiResponse.GatewayPageURL });
