@@ -652,7 +652,6 @@ const rideRequest = async (req, res) => {
         pickup,
         drop,
         fare,
-        vehicleType,
         status: 'pending',
         createdAt: new Date(),
         acceptedAt: null,

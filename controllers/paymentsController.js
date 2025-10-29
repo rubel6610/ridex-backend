@@ -7,6 +7,7 @@ const store_id = process.env.STORE_ID;
 const store_passwd = process.env.STORE_PASSWORD;
 const is_live = false;
 
+
 const initPayment = async (req, res) => {
   try {
     const ridePay = getCollection('payments');
@@ -55,10 +56,10 @@ const initPayment = async (req, res) => {
       },
     };
     const insertResult = await ridePay.insertOne(ridePayDoc);
-
+    console.log(req);
     // sslcommerz init data
     const data = {
-      total_amount: ridePayDoc.rideDetails.fareBreakdown.amount || 0,
+      total_amount: req.body.amount ||  0,
       currency: 'BDT',
       tran_id: insertResult.insertedId.toString(),
       success_url: `${process.env.SERVER_BASE_URL}/api/payment/success`,
@@ -66,7 +67,7 @@ const initPayment = async (req, res) => {
       cancel_url: `${process.env.SERVER_BASE_URL}/api/payment/cancel`,
       ipn_url: `${process.env.SERVER_BASE_URL}/api/payment/ipn`,
 
-      // send custom data the correct way
+      // ✅ send custom data the correct way
       value_a: req.body.rideId,
       value_b: req.body.userId,
       value_c: req.body.riderId,
@@ -98,7 +99,7 @@ const initPayment = async (req, res) => {
     // sslcommerz initiating
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
     const apiResponse = await sslcz.init(data);
-    // console.log(apiResponse);
+    console.log(apiResponse);
 
     // Redirect the user to payment gateway
     res.json({ url: apiResponse.GatewayPageURL });
@@ -111,7 +112,6 @@ const initPayment = async (req, res) => {
 
 const successPayment = async (req, res) => {
   try {
-    console.log('SSLCommerz Success Data:', req.body);
 
     const { tran_id, value_a, value_b, value_c, amount } = req.body;
     console.log(tran_id);
@@ -135,7 +135,7 @@ const successPayment = async (req, res) => {
 
     if (result.modifiedCount > 0) {
       const redirectUrl = `${process.env.CLIENT_URL}/dashboard/user/payment/success-review?paymentId=${tran_id}&rideId=${rideId}&userId=${userId}&riderId=${riderId}&amount=${amount}`;
-    //   console.log('➡️ Redirecting to:', redirectUrl);
+  
       return res.redirect(redirectUrl);
     } else {
       res.status(404).send('Payment not found or already updated');
@@ -145,7 +145,6 @@ const successPayment = async (req, res) => {
     res.status(500).send('Payment success handler failed');
   }
 };
-
 
 const failPayment = async (req, res) => {
   try {
@@ -232,11 +231,65 @@ const markRiderAsPaid = async (req, res) => {
     }
 
     const paymentsCollection = getCollection('payments');
+    const riderPaymentsCollection = getCollection('riderPayments');
+    const platformPaymentsCollection = getCollection('platformPayments');
+    const userPaymentsCollection = getCollection('userPayments');
     
+    // First, get the payment details
+    const payment = await paymentsCollection.findOne({ _id: new ObjectId(paymentId) });
+    
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    // Extract payment details
+    const transactionId = payment.transactionId || paymentId;
+    const userId = payment.userId;
+    const riderId = payment.riderId;
+    const amount = payment.rideDetails?.fareBreakdown?.totalAmount || 0;
+    const riderCommission = payment.rideDetails?.fareBreakdown?.riderCommission || 0;
+    const platformCommission = payment.rideDetails?.fareBreakdown?.platformCommission || 0;
+
+    // Create a rider payment record
+    const riderPaymentRecord = {
+      userId: userId,
+      riderId: riderId,
+      amount: amount,
+      riderCommission: riderCommission,
+      paidAt: new Date(),
+      paymentId: paymentId
+    };
+
+    // Create a platform payment record
+    const platformPaymentRecord = {
+      userId: userId,
+      riderId: riderId,
+      amount: amount,
+      platformCommission: platformCommission,
+      paidAt: new Date(),
+      paymentId: paymentId
+    };
+
+    // Create a user payment record
+    const userPaymentRecord = {
+      userId: userId,
+      riderId: riderId,
+      amount: amount,
+      paidAt: new Date(),
+      paymentId: paymentId
+    };
+
+    // Insert the records
+    await riderPaymentsCollection.insertOne(riderPaymentRecord);
+    await platformPaymentsCollection.insertOne(platformPaymentRecord);
+    await userPaymentsCollection.insertOne(userPaymentRecord);
+
+    // Update the payment status
     const result = await paymentsCollection.updateOne(
       { _id: new ObjectId(paymentId) },
       { 
         $set: { 
+          paid: true,
           riderPaid: 'Paid',
           riderPaidAt: new Date()
         } 
@@ -295,7 +348,7 @@ const getRiderPerformanceStats = async (req, res) => {
     // Get all reviews for this rider
     const reviews = await rideReviewsCollection.find({ riderId: riderId }).toArray();
 
-    console.log('📊 Data counts:', {
+    console.log('Data counts:', {
       payments: payments.length,
       rides: rides.length,
       reviews: reviews.length
@@ -391,6 +444,48 @@ const getRiderPerformanceStats = async (req, res) => {
   }
 };
 
+// GET: Get all platform payments
+const getAllPlatformPayments = async (req, res) => {
+  try {
+    const platformPaymentsCollection = getCollection('platformPayments');
+
+    const platformPayments = await platformPaymentsCollection.find().toArray();
+
+    res.status(200).json(platformPayments);
+  } catch (error) {
+    console.error('❌ Error fetching platform payments:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET: Get all rider payments
+const getAllRiderPayments = async (req, res) => {
+  try {
+    const riderPaymentsCollection = getCollection('riderPayments');
+
+    const riderPayments = await riderPaymentsCollection.find().toArray();
+
+    res.status(200).json(riderPayments);
+  } catch (error) {
+    console.error('❌ Error fetching rider payments:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET: Get all user payments
+const getAllUserPayments = async (req, res) => {
+  try {
+    const userPaymentsCollection = getCollection('userPayments');
+
+    const userPayments = await userPaymentsCollection.find().toArray();
+
+    res.status(200).json(userPayments);
+  } catch (error) {
+    console.error('❌ Error fetching user payments:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   initPayment,
   successPayment,
@@ -399,4 +494,7 @@ module.exports = {
   getAllPayments,
   getRiderPerformanceStats,
   markRiderAsPaid,
+  getAllPlatformPayments,
+  getAllRiderPayments,
+  getAllUserPayments
 };
