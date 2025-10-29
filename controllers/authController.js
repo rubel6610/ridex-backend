@@ -15,13 +15,13 @@ const registerUser = async (req, res) => {
     const { fullName, NIDno, dateOfBirth, email, password, photoUrl } =
       req.body;
 
-
     // 1. NID validation
     const nidData = await nidCollection.findOne({
       fullName,
       NIDno,
       dateOfBirth,
     });
+
     if (!nidData) {
       return res
         .status(404)
@@ -33,7 +33,7 @@ const registerUser = async (req, res) => {
     if (existingUser) {
       return res
         .status(400)
-        .json({ message: "You are already registered and approved." });
+        .json({ message: "You are already registered." });
     }
 
     // 3. Hash password
@@ -238,9 +238,55 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ============================
+// POST: Logout Controller
+// ============================
+const logoutUser = async (req, res) => {
+  try {
+    const { userId, role } = req.body;
+
+    // Validate request
+    if (!userId || !role) {
+      return res.status(400).json({ 
+        message: "Missing required fields: userId and role" 
+      });
+    }
+
+    // If the user is a rider, set their status to offline
+    if (role === "rider") {
+      const ridersCollection = getCollection("riders");
+      const { ObjectId } = require("mongodb");
+
+      try {
+        // Convert userId to ObjectId
+        const objectId = new ObjectId(userId);
+        
+        const result = await ridersCollection.updateOne(
+          { userId: objectId },
+          { $set: { status: "offline" } }
+        );
+
+        console.log(`Rider status update result:`, result.modifiedCount);
+      } catch (err) {
+        console.error("Error updating rider status:", err);
+        // Continue with logout even if rider status update fails
+      }
+    }
+
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ 
+      message: "Server error",
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   forgotPassword,
   resetPassword,
+  logoutUser,
 };

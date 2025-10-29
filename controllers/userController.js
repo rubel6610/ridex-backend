@@ -35,8 +35,6 @@ const getSingleUser = async (req, res) => {
   try {
     const { userId, email } = req.query;
 
-    console.log("ratul: ",userId, email);
-    
     if (!userId && !email) {
       return res.status(400).json({ message: 'User ID or email required' });
     }

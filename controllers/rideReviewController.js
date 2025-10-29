@@ -71,8 +71,61 @@ const getAllRideReviews = async (req, res) => {
   }
 };
 
+// Update rider document with new review (numeric rating update)
+const updateRiderReviews = async (req, res) => {
+  try {
+    const { riderId, review } = req.body;
+    console.log(req.body);
+    if (!riderId || !review) {
+      return res.status(400).json({ message: 'riderId and numeric rating are required' });
+    }
+
+    const ridersCollection = getCollection('riders');
+
+    // Find existing rider
+    const existingRider = await ridersCollection.findOne({ _id: new ObjectId(riderId) });
+    if (!existingRider) {
+      return res.status(404).json({ message: 'Rider not found' });
+    }
+
+    // Safely handle null or undefined reviews field
+    let previousRating = 0;
+    if (existingRider.reviews === null || existingRider.reviews === undefined || isNaN(existingRider.reviews)) {
+      previousRating = 0;
+    } else {
+      previousRating = Number(existingRider.reviews);
+    }
+
+    const newRating = Number(review);
+    const updatedRating = previousRating + newRating;
+
+    // Update the rider document
+    const result = await ridersCollection.updateOne(
+      { _id: new ObjectId(riderId) },
+      { $set: { reviews: updatedRating } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(400).json({ message: 'Failed to update review rating' });
+    }
+
+    res.status(200).json({
+      message: 'Rider review rating updated successfully',
+      previousRating,
+      newRating,
+      totalRating: updatedRating,
+    });
+  } catch (error) {
+    console.error('Error updating rider review rating:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
 module.exports = {
   createRideReview,
   getRiderReviews,
   getAllRideReviews,
+  updateRiderReviews
 };
