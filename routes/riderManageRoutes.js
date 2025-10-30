@@ -1,9 +1,9 @@
 const express = require('express');
 const { approveAndRejectRider } = require('../controllers/ridersManageController');
+const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-
-router.patch("/approveAndreject-rider/:id", approveAndRejectRider);
-
+// Admin routes
+router.patch("/approveAndreject-rider/:id", verifyToken, verifyAdmin, approveAndRejectRider);
 
 module.exports = router;

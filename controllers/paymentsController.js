@@ -11,22 +11,18 @@ const initPayment = async (req, res) => {
   try {
     const ridePay = getCollection('payments');
 
-    // ✅ Full ride payment info
+    //Full ride payment info
     const ridePayDoc = {
       rideId: req.body.rideId,
       userId: req.body.userId,
       riderId: req.body.riderId,
-
-      userName: req.body.userName,
-      userEmail: req.body.userEmail,
-      riderName: req.body.riderName || null,
-      riderEmail: req.body.riderEmail || null,
 
       promoCode: req.body.promo || null,
       currency: 'BDT',
       paymentMethod: 'SSLCommerz',
       transactionId: null,
       status: 'Pending',
+      riderPaid: 'Pending',
 
       rideDetails: {
         pickup: req.body.pickup || null,
@@ -42,7 +38,8 @@ const initPayment = async (req, res) => {
           baseFare: req.body.baseFareNum || 0,
           distanceFare: req.body.distanceFareNum || 0,
           timeFare: req.body.timeFareNum || 0,
-          tax: req.body.taxNum || 0,
+          platformFee: req.body.feeNum || 0,
+          riderFee: req.body.riderPaymentNum || 0,
           totalAmount: req.body.totalNum || 0,
         },
       },
@@ -66,7 +63,7 @@ const initPayment = async (req, res) => {
       cancel_url: `${process.env.SERVER_BASE_URL}/api/payment/cancel`,
       ipn_url: `${process.env.SERVER_BASE_URL}/api/payment/ipn`,
 
-      // ✅ send custom data the correct way
+      // send custom data the correct way
       value_a: req.body.rideId,
       value_b: req.body.userId,
       value_c: req.body.riderId,
@@ -98,11 +95,11 @@ const initPayment = async (req, res) => {
     // sslcommerz initiating
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
     const apiResponse = await sslcz.init(data);
-    console.log(apiResponse);
+    // console.log(apiResponse);
 
     // Redirect the user to payment gateway
     res.json({ url: apiResponse.GatewayPageURL });
-   
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Payment init failed' });
@@ -111,7 +108,7 @@ const initPayment = async (req, res) => {
 
 const successPayment = async (req, res) => {
   try {
-    console.log('✅ SSLCommerz Success Data:', req.body);
+    console.log('SSLCommerz Success Data:', req.body);
 
     const { tran_id, value_a, value_b, value_c, amount } = req.body;
     console.log(tran_id);
@@ -135,7 +132,7 @@ const successPayment = async (req, res) => {
 
     if (result.modifiedCount > 0) {
       const redirectUrl = `${process.env.CLIENT_URL}/dashboard/user/payment/success-review?paymentId=${tran_id}&rideId=${rideId}&userId=${userId}&riderId=${riderId}&amount=${amount}`;
-      console.log('➡️ Redirecting to:', redirectUrl);
+    //   console.log('➡️ Redirecting to:', redirectUrl);
       return res.redirect(redirectUrl);
     } else {
       res.status(404).send('Payment not found or already updated');
@@ -226,7 +223,7 @@ const getAllPayments = async (req, res) => {
 const getRiderPerformanceStats = async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     if (!userId) {
       return res.status(400).json({ message: 'User ID is required' });
     }
@@ -238,35 +235,35 @@ const getRiderPerformanceStats = async (req, res) => {
 
     // First, find the rider document using the userId
     const rider = await ridersCollection.findOne({ userId });
-    
+
     if (!rider) {
-      return res.status(404).json({ 
-        message: 'Rider profile not found. Please ensure you have completed your rider registration.' 
+      return res.status(404).json({
+        message: 'Rider profile not found. Please ensure you have completed your rider registration.'
       });
     }
 
     const riderId = rider._id;
-    
+
     console.log('🔍 Rider found:', { riderId, userId, riderName: rider.fullName });
 
     // Get all payments for this rider (handle both string and ObjectId formats)
-    const payments = await paymentsCollection.find({ 
+    const payments = await paymentsCollection.find({
       $or: [
         { riderId: riderId.toString() },
         { riderId: riderId }
       ]
     }).toArray();
-    
+
     // Get all rides for this rider
     const rides = await ridesCollection.find({ riderId: riderId }).toArray();
-    
+
     // Get all reviews for this rider
     const reviews = await rideReviewsCollection.find({ riderId: riderId }).toArray();
-    
-    console.log('📊 Data counts:', { 
-      payments: payments.length, 
-      rides: rides.length, 
-      reviews: reviews.length 
+
+    console.log('📊 Data counts:', {
+      payments: payments.length,
+      rides: rides.length,
+      reviews: reviews.length
     });
 
     // Calculate payment statistics
@@ -274,7 +271,7 @@ const getRiderPerformanceStats = async (req, res) => {
     const pendingPayments = payments.filter(p => p.status === 'Pending');
     const failedPayments = payments.filter(p => p.status === 'Failed');
     const cancelledPayments = payments.filter(p => p.status === 'Cancelled');
-    
+
     const totalEarnings = completedPayments.reduce((sum, payment) => {
       return sum + (payment.rideDetails?.fareBreakdown?.totalAmount || 0);
     }, 0);
@@ -293,8 +290,8 @@ const getRiderPerformanceStats = async (req, res) => {
     const cancellationRate = totalRideRequests > 0 ? Math.round(((rejectedRides.length + cancelledRides.length) / totalRideRequests) * 100) : 0;
 
     // Calculate average rating
-    const averageRating = reviews.length > 0 
-      ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length 
+    const averageRating = reviews.length > 0
+      ? reviews.reduce((sum, review) => sum + (review.rating || 0), 0) / reviews.length
       : 0;
 
     // Calculate weekly rating trend (last 7 weeks)
@@ -305,17 +302,17 @@ const getRiderPerformanceStats = async (req, res) => {
       weekStart.setDate(now.getDate() - (i * 7 + 6));
       const weekEnd = new Date(now);
       weekEnd.setDate(now.getDate() - (i * 7));
-      
+
       const weekReviews = reviews.filter(review => {
         if (!review.createdAt) return false;
         const reviewDate = new Date(review.createdAt);
         return reviewDate >= weekStart && reviewDate <= weekEnd;
       });
-      
-      const weekRating = weekReviews.length > 0 
-        ? weekReviews.reduce((sum, review) => sum + (review.rating || 0), 0) / weekReviews.length 
+
+      const weekRating = weekReviews.length > 0
+        ? weekReviews.reduce((sum, review) => sum + (review.rating || 0), 0) / weekReviews.length
         : (averageRating || 0);
-      
+
       weeklyTrend.push(Math.round(weekRating * 10) / 10);
     }
 
