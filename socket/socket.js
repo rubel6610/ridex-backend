@@ -35,7 +35,7 @@ function initSocket(server) {
     // Join rider-specific room for receiving ride requests
     socket.on('join_rider', (riderId) => {
       socket.join(`rider_${riderId}`);
-      // Removed debug console log: console.log(`Rider ${riderId} joined room rider_${riderId}`);
+      console.log(`Rider ${riderId} joined room rider_${riderId}`);
     });
 
     // Join a ride-specific chat room

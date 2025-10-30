@@ -319,6 +319,8 @@ const markRiderAsPaid = async (req, res) => {
     const amount = payment.rideDetails?.fareBreakdown?.totalAmount || 0;
     const riderCommission = payment.rideDetails?.fareBreakdown?.riderCommission || 0;
     const platformCommission = payment.rideDetails?.fareBreakdown?.platformCommission || 0;
+    
+    console.log('Payment details for rider notification:', { paymentId, riderId, userId, amount, riderCommission });
 
     // Create a rider payment record
     const riderPaymentRecord = {
@@ -368,6 +370,26 @@ const markRiderAsPaid = async (req, res) => {
 
     if (result.matchedCount === 0) {
       return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    // Notify the rider about the payment
+    try {
+      const io = getIO();
+      const notificationData = {
+        paymentId,
+        amount,
+        riderCommission,
+        paidAt: new Date(),
+        message: `You have received ৳${riderCommission} for your ride service. Payment processed successfully.`
+      };
+      
+      // Emit notification to the specific rider's room
+      console.log('Sending rider payment notification to room:', `rider_${riderId}`);
+      console.log('Notification data:', notificationData);
+      io.to(`rider_${riderId}`).emit('rider_payment_notification', notificationData);
+    } catch (socketErr) {
+      // Changed to warning level for non-critical socket issues as per project guidelines
+      console.warn('Warning: Error emitting rider payment notification:', socketErr);
     }
 
     res.status(200).json({ message: 'Rider marked as paid successfully' });
