@@ -15,8 +15,8 @@ const becomeRider = async (req, res) => {
       vehicleModel,
       vehicleRegisterNumber,
       drivingLicense,
-      verifyImage: frontFace, 
-      leftPose,  
+      frontFace, // Optional single image identity verification
+      leftPose,  // Optional 3-step face verification
       rightPose,
       frontPose,
     } = req.body;
@@ -176,7 +176,7 @@ const insertRiders = async (req, res) => {
 };
 
 // PUT: Update rider by ID
-const updateRiderById = async (req, res) => {
+ const updateRiderById = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -195,15 +195,18 @@ const updateRiderById = async (req, res) => {
       { _id: new ObjectId(id) },
       { $set: updateData }
     );
-
+    const updatedRider = await ridersCollection.findOne({ _id: new ObjectId(id) });//add new 
     res.status(200).json({
       message: 'Rider updated successfully',
+       updatedRider,// add new
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
-};
+}; 
+
+
 
 // DELETE: Delete rider by ID
 const deleteRiderById = async (req, res) => {
