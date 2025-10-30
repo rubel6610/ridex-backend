@@ -124,7 +124,7 @@ const getSpecificRide = async (req, res) => {
     // now find only accepted rides for that rider (for ongoing rides page)
     const rides = await ridesCollection.find({ 
       riderId: rider._id,
-      status: 'accepted' // Only return accepted rides for ongoing section
+      status: 'accepted' 
     }).toArray();
 
     res.json({ rides, rider });
@@ -535,7 +535,7 @@ const rejectRide = async (req, res) => {
         `
       );
 
-      // Wait 60 seconds → if still pending, auto-reject + find next rider
+      // Wait 60 seconds → if still pending, auto-reject , find next rider
       setTimeout(async () => {
         const updatedRide = await ridesCollection.findOne({ _id: new ObjectId(rideId) });
         if (updatedRide && updatedRide.status === 'pending') {
@@ -630,7 +630,7 @@ const rideRequest = async (req, res) => {
       });
     };
 
-    // ✅ Generate unique rideId immediately
+    //  Generate unique rideId immediately
     const rideId = new ObjectId();
 
     // Recursive logic to handle retries
@@ -678,7 +678,7 @@ const rideRequest = async (req, res) => {
 
       await ridesCollection.insertOne(ride);
 
-      // ✅ Emit real-time notification to the rider via Socket.IO
+      //  Emit real-time notification to the rider via Socket.IO
       const io = getIO();
       io.to(`rider_${rider._id.toString()}`).emit('new_ride_request', {
         rideId: rideId.toString(),
@@ -696,7 +696,7 @@ const rideRequest = async (req, res) => {
 
       console.log(`✅ Real-time ride request sent to rider ${rider._id}`);
 
-      // ✅ Send email as backup notification
+      //  Send email as backup notification
       await sendRideEmail(
         rider,
         'New Ride Request',
