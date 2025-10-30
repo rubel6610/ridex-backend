@@ -533,7 +533,7 @@ const rejectRide = async (req, res) => {
         `
       );
 
-      // Wait 60 seconds → if still pending, auto-reject + find next rider
+      // Wait 60 seconds → if still pending, auto-reject , find next rider
       setTimeout(async () => {
         const updatedRide = await ridesCollection.findOne({ _id: new ObjectId(rideId) });
         if (updatedRide && updatedRide.status === 'pending') {
