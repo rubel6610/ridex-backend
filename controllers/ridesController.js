@@ -124,7 +124,7 @@ const getSpecificRide = async (req, res) => {
     // now find only accepted rides for that rider (for ongoing rides page)
     const rides = await ridesCollection.find({ 
       riderId: rider._id,
-      status: 'accepted' // Only return accepted rides for ongoing section
+      status: 'accepted' 
     }).toArray();
 
     res.json({ rides, rider });
