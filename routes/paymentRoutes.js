@@ -3,8 +3,9 @@ const router = express.Router();
 const {
 initPayment, successPayment, failPayment, cancelPayment, getAllPayments, getRiderPerformanceStats, markRiderAsPaid, getAllPlatformPayments, getAllRiderPayments, getAllUserPayments
 } = require('../controllers/paymentsController');
+const { verifyToken, verifyAdmin, verifyUser, verifyRider } = require('../middleware/authMiddleware');
 
-router.post('/init', initPayment);
+// Public routes (payment callbacks)
 router.post('/success', successPayment);
 router.post('/fail', failPayment);
 router.post('/cancel', cancelPayment);

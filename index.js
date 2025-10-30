@@ -41,6 +41,8 @@ const geoCodeRoutes = require('./routes/geoCodeRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const chatBotRoutes = require('./routes/chatBotRoutes');
+const emailRoutes = require("./routes/emailRoutes");
 
 // Default route
 app.get('/', (req, res) => {
@@ -60,6 +62,8 @@ app.use('/api', geoCodeRoutes);
 app.use('/api', promotionRoutes);
 app.use('/api', blogRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use("/api", chatBotRoutes);
+app.use("/api", emailRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5002;

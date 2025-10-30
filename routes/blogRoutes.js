@@ -1,20 +1,15 @@
 const express = require('express');
 const { generateBlog, saveBlog, getBlogs, getBlogById, deleteBlog } = require('../controllers/blogController');
+const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// POST: Generate blog content using AI
-router.post('/generate-blog', generateBlog);
-
-// POST: Save blog to database
-router.post('/save-blog', saveBlog);
-
-// GET: Get all blogs
+// Public routes
 router.get('/blogs', getBlogs);
-
-// GET: Get single blog by ID
 router.get('/blogs/:id', getBlogById);
 
-// DELETE: Delete blog by ID
-router.delete('/blogs/:id', deleteBlog);
+// Admin routes
+router.post('/generate-blog', verifyToken, verifyAdmin, generateBlog);
+router.post('/save-blog', verifyToken, verifyAdmin, saveBlog);
+router.delete('/blogs/:id', verifyToken, verifyAdmin, deleteBlog);
 
 module.exports = router;
