@@ -628,7 +628,7 @@ const rideRequest = async (req, res) => {
       });
     };
 
-    // ✅ Generate unique rideId immediately
+    //  Generate unique rideId immediately
     const rideId = new ObjectId();
 
     // Recursive logic to handle retries
@@ -677,7 +677,7 @@ const rideRequest = async (req, res) => {
 
       await ridesCollection.insertOne(ride);
 
-      // ✅ Emit real-time notification to the rider via Socket.IO
+      //  Emit real-time notification to the rider via Socket.IO
       const io = getIO();
       io.to(`rider_${rider._id.toString()}`).emit('new_ride_request', {
         rideId: rideId.toString(),
@@ -695,7 +695,7 @@ const rideRequest = async (req, res) => {
 
       console.log(`✅ Real-time ride request sent to rider ${rider._id}`);
 
-      // ✅ Send email as backup notification
+      //  Send email as backup notification
       await sendRideEmail(
         rider,
         'New Ride Request',
