@@ -57,7 +57,7 @@ const initPayment = async (req, res) => {
       },
     };
     const insertResult = await ridePay.insertOne(ridePayDoc);
-    console.log(req);
+    // Removed debug console log: console.log(req);
     // sslcommerz init data
     const data = {
       total_amount: req.body.amount ||  0,
@@ -100,12 +100,13 @@ const initPayment = async (req, res) => {
     // sslcommerz initiating
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
     const apiResponse = await sslcz.init(data);
-    console.log(apiResponse);
+    // Removed debug console log: console.log(apiResponse);
 
     // Redirect the user to payment gateway
     res.json({ url: apiResponse.GatewayPageURL });
 
   } catch (err) {
+    // Keep error logging for critical issues
     console.error(err);
     res.status(500).json({ message: 'Payment init failed' });
   }
@@ -113,9 +114,7 @@ const initPayment = async (req, res) => {
 
 const successPayment = async (req, res) => {
   try {
-
     const { tran_id, value_a, value_b, value_c, amount } = req.body;
-    console.log(tran_id);
     const rideId = value_a;
     const userId = value_b;
     const riderId = value_c;
@@ -142,6 +141,7 @@ const successPayment = async (req, res) => {
         const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
         userName = user?.fullName || user?.name || 'Unknown User';
       } catch (userErr) {
+        // Keep error logging for critical issues
         console.error('Error fetching user info:', userErr);
       }
     }
@@ -157,6 +157,7 @@ const successPayment = async (req, res) => {
         paidAt: new Date()
       });
     } catch (transactionErr) {
+      // Keep error logging for critical issues
       console.error('Error creating payment transaction record:', transactionErr);
     }
 
@@ -169,24 +170,44 @@ const successPayment = async (req, res) => {
         amount,
         transactionId: tran_id,
         timestamp: new Date(),
-        message: `New payment of ৳${amount} received!`
+        message: `New payment of ৳${amount} received from ${userName}`
       };
       
-      console.log('Emitting new_payment_notification to admins room with data:', notificationData);
       io.to('admins').emit('new_payment_notification', notificationData);
-      console.log('Successfully emitted new_payment_notification');
+      
+      // Store payment success notification for user (to be delivered when they connect)
+      if (userId) {
+        const userNotificationData = {
+          userId,
+          amount,
+          transactionId: tran_id,
+          timestamp: new Date(),
+          message: `Your payment of ৳${amount} has been successfully processed. Transaction ID: ${tran_id}`
+        };
+        
+        // Store in a simple in-memory cache (in production, use Redis or database)
+        if (global.pendingPaymentNotifications === undefined) {
+          global.pendingPaymentNotifications = new Map();
+        }
+        
+        global.pendingPaymentNotifications.set(userId, userNotificationData);
+      } else {
+        // Changed to warning level as per project guidelines
+        console.warn('User ID not available, cannot store payment success notification for user');
+      }
     } catch (socketErr) {
-      console.error('Error emitting payment notification:', socketErr);
+      // Changed to warning level for non-critical socket issues as per project guidelines
+      console.warn('Warning: Error emitting payment notification:', socketErr);
     }
 
     if (result.modifiedCount > 0) {
       const redirectUrl = `${process.env.CLIENT_URL}/dashboard/user/payment/success-review?paymentId=${tran_id}&rideId=${rideId}&userId=${userId}&riderId=${riderId}&amount=${amount}`;
-  
       return res.redirect(redirectUrl);
     } else {
       res.status(404).send('Payment not found or already updated');
     }
   } catch (err) {
+    // Keep error logging for critical issues
     console.error(err);
     res.status(500).send('Payment success handler failed');
   }
@@ -218,6 +239,7 @@ const failPayment = async (req, res) => {
     // redirect user to frontend fail page
     res.redirect(`${process.env.CLIENT_URL}/payment/fail`);
   } catch (err) {
+    // Keep error logging for critical issues
     console.error(err);
     res.status(500).send('Payment fail handler failed');
   }
@@ -249,6 +271,7 @@ const cancelPayment = async (req, res) => {
     // redirect user to frontend cancel page
     res.redirect(`${process.env.CLIENT_URL}/payment/cancel`);
   } catch (err) {
+    // Keep error logging for critical issues
     console.error(err);
     res.status(500).send('Payment cancel handler failed');
   }
@@ -262,6 +285,7 @@ const getAllPayments = async (req, res) => {
 
     res.status(200).json(payments);
   } catch (error) {
+    // Keep error logging for critical issues
     console.error('❌ Error fetching payments:', error);
     res.status(500).json({ message: 'Server error' });
   }
@@ -348,6 +372,7 @@ const markRiderAsPaid = async (req, res) => {
 
     res.status(200).json({ message: 'Rider marked as paid successfully' });
   } catch (error) {
+    // Keep error logging for critical issues
     console.error('❌ Error marking rider as paid:', error);
     res.status(500).json({ message: 'Server error' });
   }
@@ -378,7 +403,7 @@ const getRiderPerformanceStats = async (req, res) => {
 
     const riderId = rider._id;
 
-    console.log('🔍 Rider found:', { riderId, userId, riderName: rider.fullName });
+    // Removed debug console log: console.log('🔍 Rider found:', { riderId, userId, riderName: rider.fullName });
 
     // Get all payments for this rider (handle both string and ObjectId formats)
     const payments = await paymentsCollection.find({
@@ -394,11 +419,11 @@ const getRiderPerformanceStats = async (req, res) => {
     // Get all reviews for this rider
     const reviews = await rideReviewsCollection.find({ riderId: riderId }).toArray();
 
-    console.log('Data counts:', {
-      payments: payments.length,
-      rides: rides.length,
-      reviews: reviews.length
-    });
+    // Removed debug console log: console.log('Data counts:', {
+    //   payments: payments.length,
+    //   rides: rides.length,
+    //   reviews: reviews.length
+    // });
 
     // Calculate payment statistics
     const completedPayments = payments.filter(p => p.status === 'Paid');
@@ -476,15 +501,16 @@ const getRiderPerformanceStats = async (req, res) => {
       }
     };
 
-    console.log('✅ Performance stats calculated:', {
-      rating: performanceStats.rating,
-      totalEarnings: performanceStats.totalEarnings,
-      totalRides: performanceStats.totalRideRequests,
-      totalReviews: performanceStats.totalReviews
-    });
+    // Removed debug console log: console.log('✅ Performance stats calculated:', {
+    //   rating: performanceStats.rating,
+    //   totalEarnings: performanceStats.totalEarnings,
+    //   totalRides: performanceStats.totalRideRequests,
+    //   totalReviews: performanceStats.totalReviews
+    // });
 
     res.status(200).json(performanceStats);
   } catch (error) {
+    // Keep error logging for critical issues
     console.error('❌ Error fetching rider performance stats:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -499,6 +525,7 @@ const getAllPlatformPayments = async (req, res) => {
 
     res.status(200).json(platformPayments);
   } catch (error) {
+    // Keep error logging for critical issues
     console.error('❌ Error fetching platform payments:', error);
     res.status(500).json({ message: 'Server error' });
   }
@@ -513,6 +540,7 @@ const getAllRiderPayments = async (req, res) => {
 
     res.status(200).json(riderPayments);
   } catch (error) {
+    // Keep error logging for critical issues
     console.error('❌ Error fetching rider payments:', error);
     res.status(500).json({ message: 'Server error' });
   }
@@ -527,6 +555,7 @@ const getAllUserPayments = async (req, res) => {
 
     res.status(200).json(userPayments);
   } catch (error) {
+    // Keep error logging for critical issues
     console.error('❌ Error fetching user payments:', error);
     res.status(500).json({ message: 'Server error' });
   }

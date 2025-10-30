@@ -13,36 +13,43 @@ function initSocket(server) {
   });
 
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    // Removed debug console log: console.log('User connected:', socket.id);
 
     socket.on('join_user', (userId) => {
       socket.join(`user_${userId}`);
-      console.log(`User ${userId} joined room user_${userId}`);
+      // Removed debug console log: console.log(`User ${userId} joined room user_${userId}`);
+      
+      // Check for pending payment notifications
+      if (global.pendingPaymentNotifications && global.pendingPaymentNotifications.has(userId)) {
+        const notificationData = global.pendingPaymentNotifications.get(userId);
+        socket.emit('payment_success_notification', notificationData);
+        global.pendingPaymentNotifications.delete(userId);
+      }
     });
 
     socket.on('join_admin', (adminId) => {
       socket.join('admins');
-      console.log(`Admin ${adminId} joined admins room`);
+      // Removed debug console log: console.log(`Admin ${adminId} joined admins room`);
     });
 
     // Join rider-specific room for receiving ride requests
     socket.on('join_rider', (riderId) => {
       socket.join(`rider_${riderId}`);
-      console.log(`Rider ${riderId} joined room rider_${riderId}`);
+      // Removed debug console log: console.log(`Rider ${riderId} joined room rider_${riderId}`);
     });
 
     // Join a ride-specific chat room
     socket.on('join_ride_chat', (data) => {
       const { rideId, userId, userType } = data;
       socket.join(`ride_${rideId}`);
-      console.log(`${userType} ${userId} joined ride chat room: ride_${rideId}`);
+      // Removed debug console log: console.log(`${userType} ${userId} joined ride chat room: ride_${rideId}`);
     });
 
     // Leave a ride-specific chat room
     socket.on('leave_ride_chat', (data) => {
       const { rideId, userId, userType } = data;
       socket.leave(`ride_${rideId}`);
-      console.log(`${userType} ${userId} left ride chat room: ride_${rideId}`);
+      // Removed debug console log: console.log(`${userType} ${userId} left ride chat room: ride_${rideId}`);
     });
 
     socket.on('send_ride_message', async (data) => {
@@ -98,8 +105,9 @@ function initSocket(server) {
           });
         }
 
-        console.log(`Message sent in ride ${rideId} from ${senderType} ${senderId}`);
+        // Removed debug console log: console.log(`Message sent in ride ${rideId} from ${senderType} ${senderId}`);
       } catch (error) {
+        // Keep error logging for critical issues
         console.error('Error in send_ride_message:', error);
         socket.emit('message_error', { error: 'Failed to send message' });
       }
@@ -125,6 +133,7 @@ function initSocket(server) {
 
         io.to(`ride_${rideId}`).emit('messages_marked_read', { rideId, userId });
       } catch (error) {
+        // Keep error logging for critical issues
         console.error('Error in mark_messages_read:', error);
       }
     });
@@ -160,6 +169,7 @@ function initSocket(server) {
           });
         }
       } catch (error) {
+        // Keep error logging for critical issues
         console.error('Error in user_typing_start:', error);
       }
     });
@@ -175,6 +185,7 @@ function initSocket(server) {
           });
         }
       } catch (error) {
+        // Keep error logging for critical issues
         console.error('Error in user_typing_stop:', error);
       }
     });
@@ -189,6 +200,7 @@ function initSocket(server) {
           });
         }
       } catch (error) {
+        // Keep error logging for critical issues
         console.error('Error in admin_typing_start:', error);
       }
     });
@@ -203,12 +215,13 @@ function initSocket(server) {
           });
         }
       } catch (error) {
+        // Keep error logging for critical issues
         console.error('Error in admin_typing_stop:', error);
       }
     });
 
     socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id);
+      // Removed debug console log: console.log('User disconnected:', socket.id);
     });
   });
 
