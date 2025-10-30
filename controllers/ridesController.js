@@ -376,6 +376,8 @@ const acceptRide = async (req, res) => {
 
     // ✅ Emit Socket.IO event to notify user
     const io = getIO();
+    console.log('Ride acceptance: Emitting to room:', `user_${ride.userId}`);
+    console.log('Ride acceptance: User ID type:', typeof ride.userId, 'User ID value:', ride.userId);
     io.to(`user_${ride.userId}`).emit('ride_accepted', {
       rideId: rideId.toString(),
       riderInfo: updatedRide.riderInfo
@@ -652,7 +654,6 @@ const rideRequest = async (req, res) => {
         pickup,
         drop,
         fare,
-        vehicleType,
         status: 'pending',
         createdAt: new Date(),
         acceptedAt: null,
