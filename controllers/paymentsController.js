@@ -319,8 +319,6 @@ const markRiderAsPaid = async (req, res) => {
     const amount = payment.rideDetails?.fareBreakdown?.totalAmount || 0;
     const riderCommission = payment.rideDetails?.fareBreakdown?.riderCommission || 0;
     const platformCommission = payment.rideDetails?.fareBreakdown?.platformCommission || 0;
-    
-    console.log('Payment details for rider notification:', { paymentId, riderId, userId, amount, riderCommission });
 
     // Create a rider payment record
     const riderPaymentRecord = {
@@ -384,8 +382,6 @@ const markRiderAsPaid = async (req, res) => {
       };
       
       // Emit notification to the specific rider's room
-      console.log('Sending rider payment notification to room:', `rider_${riderId}`);
-      console.log('Notification data:', notificationData);
       io.to(`rider_${riderId}`).emit('rider_payment_notification', notificationData);
     } catch (socketErr) {
       // Changed to warning level for non-critical socket issues as per project guidelines
