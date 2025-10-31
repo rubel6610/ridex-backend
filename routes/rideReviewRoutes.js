@@ -6,14 +6,14 @@ const {
   getAllRideReviews,
   updateRiderReviews
 } = require('../controllers/rideReviewController');
-const { verifyToken, verifyAdmin, verifyUser } = require('../middleware/authMiddleware');
+
 
 // User routes
-router.post('/', verifyToken, verifyUser, createRideReview);
+router.post('/',createRideReview);
 router.get('/rider/:riderId', getRiderReviews); // Public access to view rider reviews
 
 // Admin routes
-router.get('/', verifyToken, verifyAdmin, getAllRideReviews);
-router.put('/update', verifyToken, verifyAdmin, updateRiderReviews);
+router.get('/',getAllRideReviews);
+router.put('/update', updateRiderReviews);
 
 module.exports = router;
