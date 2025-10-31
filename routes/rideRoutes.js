@@ -17,29 +17,27 @@ const {
   cancelRideRequest,
   completeRide,
 } = require('../controllers/ridesController');
-const { verifyToken, verifyAdmin, verifyUser, verifyRider } = require('../middleware/authMiddleware');
 
 // ADMIN ROUTES
-router.get('/rides', verifyToken, verifyAdmin, getAllRides);
-router.post('/ride/insert-allRides', verifyToken, verifyAdmin, insertRides);
-router.delete('/ride/delete-allRides', verifyToken, verifyAdmin, deleteAllRides);
+router.get('/rides', getAllRides);
+router.post('/ride/insert-allRides',insertRides);
+router.delete('/ride/delete-allRides', deleteAllRides);
 
 // RIDER ROUTES
-router.get('/rides/:riderId', verifyToken, verifyRider, getAvailableRide);
-router.get('/ride/:rideId', verifyToken, getCurrentRide);
-router.get('/specific-rider-ride/:riderId', verifyToken, verifyRider, getSpecificRide);
-router.post('/status', verifyToken, verifyRider, requestStatus);
-router.post('/status/offline', verifyToken, verifyRider, setStatusOffline);
-router.post('/location', verifyToken, verifyRider, updateLocation);
-router.post('/req/ride-accept', verifyToken, verifyRider, acceptRide);
-router.post('/req/ride-reject', verifyToken, verifyRider, rejectRide);
+router.get('/rides/:riderId',getAvailableRide);
+router.get('/ride/:rideId', getCurrentRide);
+router.get('/specific-rider-ride/:riderId', getSpecificRide);
+router.post('/status', requestStatus);
+router.post('/status/offline', setStatusOffline);
+router.post('/location',updateLocation);
+router.post('/req/ride-accept', acceptRide);
+router.post('/req/ride-reject', rejectRide);
 
 // USER ROUTES
-router.post('/request', verifyToken, verifyUser, rideRequest);
-router.post('/ride/cancel', verifyToken, verifyUser, cancelRideRequest);
-router.post('/ride/complete', verifyToken, verifyUser, completeRide);
+router.post('/request',  rideRequest);
+router.post('/ride/cancel', cancelRideRequest);
+router.post('/ride/complete',  completeRide);
 
-// CHAT ROUTES (accessible by both user and rider for a specific ride)
-router.get('/ride/:rideId/chat', verifyToken, getRideChatMessages);
+router.get('/ride/:rideId/chat',  getRideChatMessages);
 
 module.exports = router;
