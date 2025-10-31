@@ -6,8 +6,13 @@ const {
   getAdminAnalytics,
 } = require('../controllers/analyticsController');
 
-router.get('/user/:userId', getUserAnalytics);
+
+router.get('/user/:userId',  getUserAnalytics);
+
+
 router.get('/rider/:riderId', getRiderAnalytics);
+
+
 router.get('/admin', getAdminAnalytics);
 
 module.exports = router;
