@@ -8,7 +8,6 @@ const transporter = require("../config/email");
 const contactFormSubmit = async (req, res) => {
   try {
     const { name, email, phone, subject, message } = req.body;
-
     // Validate required fields
     if (!name || !email || !subject || !message) {
       return res.status(400).json({ 
