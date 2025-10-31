@@ -7,19 +7,13 @@ const {
   updateRiderReviews
 } = require('../controllers/rideReviewController');
 
-// POST => create a review
-router.post('/', createRideReview);
 
-// Update => rider reviews
-router.put('/update', updateRiderReviews)
+// User routes
+router.post('/',createRideReview);
+router.get('/rider/:riderId', getRiderReviews); // Public access to view rider reviews
 
-// GET => all reviews for a specific rider
-router.get('/rider/:riderId', getRiderReviews);
-
-// GET => all ride reviews (for admin)
-router.get('/', getAllRideReviews);
-
-// Update => rider reviews
-router.put('/update', updateRiderReviews)
+// Admin routes
+router.get('/',getAllRideReviews);
+router.put('/update', updateRiderReviews);
 
 module.exports = router;

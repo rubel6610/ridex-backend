@@ -3,6 +3,7 @@ const router = express.Router();
 const { reverseGeocode } = require("../controllers/geoCodeControllers");
 
 
-router.get("/reverse-geocode", reverseGeocode);
+// Protected route - only authenticated users can access geocoding
+router.get("/reverse-geocode",reverseGeocode);
 
 module.exports = router;

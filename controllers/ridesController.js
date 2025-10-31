@@ -124,7 +124,7 @@ const getSpecificRide = async (req, res) => {
     // now find only accepted rides for that rider (for ongoing rides page)
     const rides = await ridesCollection.find({ 
       riderId: rider._id,
-      status: 'accepted' // Only return accepted rides for ongoing section
+      status: 'accepted' 
     }).toArray();
 
     res.json({ rides, rider });
@@ -321,12 +321,12 @@ const acceptRide = async (req, res) => {
       status: { $in: ['pending', 'accepted'] }
     });
 
-    if (existingActiveRide && existingActiveRide._id.toString() !== rideId) {
-      return res.status(400).json({ 
-        message: 'You already have an active ride. Complete it before accepting another.',
-        hasActiveRide: true
-      });
-    }
+    // if (existingActiveRide && existingActiveRide._id.toString() !== rideId) {
+    //   return res.status(400).json({ 
+    //     message: 'You already have an active ride. Complete it before accepting another.',
+    //     hasActiveRide: true
+    //   });
+    // }
 
     const filter = { _id: new ObjectId(rideId) };
     const ride = await ridesCollection.findOne(filter);
@@ -362,8 +362,22 @@ const acceptRide = async (req, res) => {
       return res.status(404).json({ message: 'Ride not found' });
     }
 
+    // ✅ Enrich ride with user information for rider accept-ride page
+    const enrichedRide = {
+      ...updatedRide,
+      userInfo: {
+        fullName: user.fullName || user.name || 'Unknown Passenger',
+        email: user.email || '',
+        phone: user.phone || '',
+        rating: user.rating || 0,
+        photoUrl: user.photoUrl || null
+      }
+    };
+
     // ✅ Emit Socket.IO event to notify user
     const io = getIO();
+    console.log('Ride acceptance: Emitting to room:', `user_${ride.userId}`);
+    console.log('Ride acceptance: User ID type:', typeof ride.userId, 'User ID value:', ride.userId);
     io.to(`user_${ride.userId}`).emit('ride_accepted', {
       rideId: rideId.toString(),
       riderInfo: updatedRide.riderInfo
@@ -385,7 +399,7 @@ const acceptRide = async (req, res) => {
           `,
     });
 
-    return res.json({ success: true, ride: updatedRide });
+    return res.json({ success: true, ride: enrichedRide });
   } catch (error) {
     console.error('🔥 Accept ride error caught:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -521,7 +535,7 @@ const rejectRide = async (req, res) => {
         `
       );
 
-      // Wait 60 seconds → if still pending, auto-reject + find next rider
+      // Wait 60 seconds → if still pending, auto-reject , find next rider
       setTimeout(async () => {
         const updatedRide = await ridesCollection.findOne({ _id: new ObjectId(rideId) });
         if (updatedRide && updatedRide.status === 'pending') {
@@ -616,7 +630,7 @@ const rideRequest = async (req, res) => {
       });
     };
 
-    // ✅ Generate unique rideId immediately
+    //  Generate unique rideId immediately
     const rideId = new ObjectId();
 
     // Recursive logic to handle retries
@@ -640,7 +654,6 @@ const rideRequest = async (req, res) => {
         pickup,
         drop,
         fare,
-        vehicleType,
         status: 'pending',
         createdAt: new Date(),
         acceptedAt: null,
@@ -665,7 +678,7 @@ const rideRequest = async (req, res) => {
 
       await ridesCollection.insertOne(ride);
 
-      // ✅ Emit real-time notification to the rider via Socket.IO
+      //  Emit real-time notification to the rider via Socket.IO
       const io = getIO();
       io.to(`rider_${rider._id.toString()}`).emit('new_ride_request', {
         rideId: rideId.toString(),
@@ -683,7 +696,7 @@ const rideRequest = async (req, res) => {
 
       console.log(`✅ Real-time ride request sent to rider ${rider._id}`);
 
-      // ✅ Send email as backup notification
+      //  Send email as backup notification
       await sendRideEmail(
         rider,
         'New Ride Request',
@@ -742,13 +755,13 @@ const rideRequest = async (req, res) => {
   }
 };
 
-// POST: User cancel ride request
+// POST: User or Rider cancel ride request
 const cancelRideRequest = async (req, res) => {
   try {
-    const { rideId, userId } = req.body;
+    const { rideId, userId, riderId } = req.body;
 
-    if (!rideId || !userId) {
-      return res.status(400).json({ message: 'rideId and userId are required' });
+    if (!rideId || (!userId && !riderId)) {
+      return res.status(400).json({ message: 'rideId and either userId or riderId are required' });
     }
 
     const ridesCollection = getCollection('rides');
@@ -756,6 +769,22 @@ const cancelRideRequest = async (req, res) => {
 
     if (!ride) {
       return res.status(404).json({ message: 'Ride not found' });
+    }
+
+
+    // Verify the user/rider has permission to cancel this ride
+    if (userId && ride.userId !== userId) {
+      return res.status(403).json({ message: 'You can only cancel your own rides' });
+    }
+    
+    if (riderId && ride.riderId.toString() !== riderId) {
+      console.log('❌ Rider ID mismatch:', { 
+        providedRiderId: riderId, 
+        rideRiderId: ride.riderId,
+        rideRiderIdString: ride.riderId.toString(),
+        types: { provided: typeof riderId, ride: typeof ride.riderId }
+      });
+      return res.status(403).json({ message: 'You can only cancel rides you accepted' });
     }
 
     // Only allow cancellation if ride is pending, accepted, rejected, auto-rejected, or no_riders_available (before completion)
@@ -792,6 +821,68 @@ const cancelRideRequest = async (req, res) => {
     });
   } catch (error) {
     console.error('Cancel ride error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// POST: Update ride status to ongoing when rider starts the ride
+const startRide = async (req, res) => {
+  try {
+    const { rideId, riderId } = req.body;
+
+    if (!rideId || !riderId) {
+      return res.status(400).json({ message: 'rideId and riderId are required' });
+    }
+
+    const ridesCollection = getCollection('rides');
+    const ride = await ridesCollection.findOne({ _id: new ObjectId(rideId) });
+
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    // Check if ride is in accepted status
+    if (ride.status !== 'accepted') {
+      return res.status(400).json({ 
+        message: 'Ride must be in accepted status to start',
+        currentStatus: ride.status 
+      });
+    }
+
+    // Update ride status to ongoing
+    await ridesCollection.updateOne(
+      { _id: new ObjectId(rideId) },
+      { 
+        $set: { 
+          status: 'ongoing', 
+          startedAt: new Date()
+        } 
+      }
+    );
+
+    // Notify both user and rider via Socket.IO
+    const io = getIO();
+    io.to(`user_${ride.userId}`).emit('ride_started', {
+      rideId: rideId.toString(),
+      status: 'ongoing',
+      startedAt: new Date()
+    });
+    
+    if (ride.riderId) {
+      io.to(`rider_${ride.riderId.toString()}`).emit('ride_started', {
+        rideId: rideId.toString(),
+        status: 'ongoing',
+        startedAt: new Date()
+      });
+    }
+
+    return res.json({ 
+      success: true, 
+      message: 'Ride started successfully',
+      status: 'ongoing'
+    });
+  } catch (error) {
+    console.error('Start ride error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -861,5 +952,6 @@ module.exports = {
   rideRequest,
   getRideChatMessages,
   cancelRideRequest,
+  startRide,
   completeRide,
 };

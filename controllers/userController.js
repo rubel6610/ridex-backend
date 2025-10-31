@@ -115,7 +115,7 @@ const updateUser = async (req, res) => {
     const usersCollection = getCollection('users');
 
     const result = await usersCollection.updateOne(
-      {$or:[{_id: new ObjectId(id)},{_id:id}]  },
+      { $or: [{ _id: new ObjectId(id) }, { _id: id }] },
       { $set: updatedData }
     );
 

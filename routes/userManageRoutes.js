@@ -3,9 +3,7 @@ const { approveAndRejectRider } = require('../controllers/ridersManageController
 
 const router = express.Router();
 
-
-
-router.patch("/approveAndrejectUser/:id", approveAndRejectRider)
-
+// Admin routes
+router.patch("/approveAndrejectUser/:id", approveAndRejectRider);
 
 module.exports = router;
