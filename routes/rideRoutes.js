@@ -15,6 +15,7 @@ const {
   rideRequest,
   getRideChatMessages,
   cancelRideRequest,
+  startRide,
   completeRide,
 } = require('../controllers/ridesController');
 
@@ -36,6 +37,10 @@ router.post('/req/ride-reject', rejectRide);
 // USER ROUTES
 router.post('/request',  rideRequest);
 router.post('/ride/cancel', cancelRideRequest);
+
+// RIDER ROUTES - Ride Management
+router.post('/ride/start', startRide);
+router.post('/ride/complete', completeRide);
 router.post('/ride/complete',  completeRide);
 
 router.get('/ride/:rideId/chat',  getRideChatMessages);

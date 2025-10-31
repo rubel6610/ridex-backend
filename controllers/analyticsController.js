@@ -5,12 +5,12 @@ const getUserAnalytics = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const paymentsCollection = getCollection('payments');
+    const paymentsCollection = getCollection('userPayments');
     const reviewsCollection = getCollection('ride_reviews');
     const ridesCollection = getCollection('rides');
 
     const [payments, reviews, rides] = await Promise.all([
-      paymentsCollection.find({ userId, status: 'Paid' }).toArray(),
+      paymentsCollection.find().toArray(),
       reviewsCollection.find({ userId }).toArray(),
       ridesCollection.find({ userId }).toArray(),
     ]);
@@ -37,7 +37,7 @@ const getUserAnalytics = async (req, res) => {
         totalSpent,
         avgRating: parseFloat(avgRating.toFixed(1)),
         monthlySpending: payments.map(p => ({
-          month: new Date(p.paymentCompletedAt || p.timestamps?.paymentCompletedAt).toLocaleString('en-US', { month: 'short' }),
+          month: new Date(p.paidAt || p.timestamps?.paidAt).toLocaleString('en-US', { month: 'short' }),
           amount: p.amount || p.totalAmount || 0
         })),
         weeklyRides: weeklyRidesData,
@@ -59,7 +59,7 @@ const getRiderAnalytics = async (req, res) => {
 
     const ridersCollection = getCollection('riders');
     const ridesCollection = getCollection('rides');
-    const paymentsCollection = getCollection('payments');
+    const paymentsCollection = getCollection('riderPayments');
 
     const rider = await ridersCollection.findOne({ userId: riderId });
     if (!rider) {
@@ -71,10 +71,7 @@ const getRiderAnalytics = async (req, res) => {
     const activeRides = rides.filter(r => r.status === 'accepted').length;
     const canceledRides = rides.filter(r => r.status === 'cancelled' || r.status === 'rejected').length;
 
-    const payments = await paymentsCollection.find({ 
-      'rideDetails.riderId': rider._id.toString(), 
-      status: 'Paid' 
-    }).toArray();
+    const payments = await paymentsCollection.find().toArray();
     
     const totalEarnings = payments.reduce((sum, p) => {
       const amount = p.amount || p.totalAmount || 0;
@@ -83,7 +80,7 @@ const getRiderAnalytics = async (req, res) => {
 
     const monthlyEarnings = {};
     payments.forEach(p => {
-      const month = new Date(p.paymentCompletedAt || p.timestamps?.paymentCompletedAt).toLocaleString('en-US', { month: 'short' });
+      const month = new Date(p.paidAt || p.timestamps?.paidAt).toLocaleString('en-US', { month: 'short' });
       const earnings = (p.amount || p.totalAmount || 0) * 0.8;
       monthlyEarnings[month] = (monthlyEarnings[month] || 0) + earnings;
     });
@@ -123,13 +120,13 @@ const getAdminAnalytics = async (req, res) => {
   try {
     const usersCollection = getCollection('users');
     const ridersCollection = getCollection('riders');
-    const paymentsCollection = getCollection('payments');
+    const paymentsCollection = getCollection('platformPayments');
     const ridesCollection = getCollection('rides');
 
     const [users, riders, payments, rides] = await Promise.all([
       usersCollection.find({ role: 'user' }).toArray(),
       ridersCollection.find().toArray(),
-      paymentsCollection.find({ status: 'Paid' }).toArray(),
+      paymentsCollection.find().toArray(),
       ridesCollection.find().toArray(),
     ]);
 
@@ -142,7 +139,7 @@ const getAdminAnalytics = async (req, res) => {
 
     const monthlyRevenue = {};
     payments.forEach(p => {
-      const month = new Date(p.paymentCompletedAt || p.timestamps?.paymentCompletedAt).toLocaleString('en-US', { month: 'short' });
+      const month = new Date(p.paidAt || p.timestamps?.paidAt).toLocaleString('en-US', { month: 'short' });
       const amount = p.amount || p.totalAmount || 0;
       monthlyRevenue[month] = (monthlyRevenue[month] || 0) + amount;
     });

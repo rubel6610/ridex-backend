@@ -6,6 +6,7 @@ initPayment, successPayment, failPayment, cancelPayment, getAllPayments, getRide
 
 
 // Public routes (payment callbacks)
+router.post('/init', initPayment);
 router.post('/success', successPayment);
 router.post('/fail', failPayment);
 router.post('/cancel', cancelPayment);
