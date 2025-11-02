@@ -416,26 +416,8 @@ const acceptRide = async (req, res) => {
     
     console.log('Ride acceptance: Events emitted at:', new Date());
 
-    // Send email to user
-    try {
-      await transporter.sendMail({
-        from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-        to: user?.email,
-        subject: 'Your Ride Accepted',
-        html: `
-              <h2>Ride Accepted</h2>
-              <p>Rider ${ride?.riderInfo?.fullName} has accepted your ride request.</p>
-              <ul>
-                <li><strong>Vehicle:</strong> ${ride?.riderInfo?.vehicleModel}</li>
-                <li><strong>Plate:</strong> ${ride?.riderInfo?.vehicleRegisterNumber}</li>
-                <li><strong>ETA:</strong> 5 mins</li>
-              </ul>
-            `,
-      });
-    } catch (emailError) {
-      console.error('Failed to send ride acceptance email:', emailError);
-      // Don't fail the request if email sending fails
-    }
+    // Removed email sending to prevent timeout errors
+    // Email functionality was causing ETIMEDOUT errors in production
 
     return res.json({ success: true, ride: enrichedRide });
   } catch (error) {
@@ -565,7 +547,9 @@ const rejectRide = async (req, res) => {
         },
       });
 
-      // ✅ Send email to new rider
+      // Removed email notification to prevent timeout errors
+      // Email functionality was causing ETIMEDOUT errors in production
+      /*
       await sendRideEmail(
         rider,
         'New Ride Request',
@@ -577,6 +561,7 @@ const rejectRide = async (req, res) => {
         <p>If you don't accept this ride within 60 seconds, it will automatically go to another nearby driver.</p>
         `
       );
+      */
 
       // Wait 60 seconds → if still pending, auto-reject , find next rider
       setTimeout(async () => {
@@ -744,7 +729,9 @@ const rideRequest = async (req, res) => {
 
       console.log(`✅ Real-time ride request sent to rider ${rider._id}`);
 
-      //  Send email as backup notification
+      // Removed email notification to prevent timeout errors
+      // Email functionality was causing ETIMEDOUT errors in production
+      /*
       await sendRideEmail(
         rider,
         'New Ride Request',
@@ -756,6 +743,7 @@ const rideRequest = async (req, res) => {
         <p>If you don't accept this ride within 60 seconds, it will automatically go to another nearby driver.</p>
         `
       );
+      */
 
       // Wait 60s → auto reject if still pending
       setTimeout(async () => {
@@ -771,6 +759,9 @@ const rideRequest = async (req, res) => {
             rideId: rideId.toString(),
           });
 
+          // Removed email notification to prevent timeout errors
+          // Email functionality was causing ETIMEDOUT errors in production
+          /*
           await sendRideEmail(
             rider,
             'Ride Request Auto-Rejected',
@@ -781,6 +772,7 @@ const rideRequest = async (req, res) => {
             <p>— RideX Team</p>
             `
           );
+          */
 
           // Try next nearest rider (add current rider to excluded list)
           await tryAssignRider([...excludeIds, rider._id]);
