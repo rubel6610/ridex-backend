@@ -13,7 +13,13 @@ const reverseGeocode = async (req, res) => {
     
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-      { signal: controller.signal }
+      { 
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'RideX/1.0 (https://ridex-develop.vercel.app)',
+          'Referer': 'https://ridex-develop.vercel.app'
+        }
+      }
     );
     
     clearTimeout(timeoutId);

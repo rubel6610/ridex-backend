@@ -271,7 +271,7 @@ const updateLocation = async (req, res) => {
     };
 
     const result = await ridersCollection.updateOne(
-      { _id: new ObjectId(riderId) }, // riderId দিয়ে খুঁজছি
+      { _id: new ObjectId(riderId) }, // riderId দিয়ে খুঁজছি
       { $set: updatedDoc }
     );
 
@@ -384,20 +384,25 @@ const acceptRide = async (req, res) => {
     });
 
     // Send email to user
-    await transporter.sendMail({
-      from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-      to: user?.email,
-      subject: 'Your Ride Accepted',
-      html: `
-            <h2>Ride Accepted</h2>
-            <p>Rider ${ride?.riderInfo?.fullName} has accepted your ride request.</p>
-            <ul>
-              <li><strong>Vehicle:</strong> ${ride?.riderInfo?.vehicleModel}</li>
-              <li><strong>Plate:</strong> ${ride?.riderInfo?.vehicleRegisterNumber}</li>
-              <li><strong>ETA:</strong> 5 mins</li>
-            </ul>
-          `,
-    });
+    try {
+      await transporter.sendMail({
+        from: `"RideX Support" <${process.env.EMAIL_USER}>`,
+        to: user?.email,
+        subject: 'Your Ride Accepted',
+        html: `
+              <h2>Ride Accepted</h2>
+              <p>Rider ${ride?.riderInfo?.fullName} has accepted your ride request.</p>
+              <ul>
+                <li><strong>Vehicle:</strong> ${ride?.riderInfo?.vehicleModel}</li>
+                <li><strong>Plate:</strong> ${ride?.riderInfo?.vehicleRegisterNumber}</li>
+                <li><strong>ETA:</strong> 5 mins</li>
+              </ul>
+            `,
+      });
+    } catch (emailError) {
+      console.error('Failed to send ride acceptance email:', emailError);
+      // Don't fail the request if email sending fails
+    }
 
     return res.json({ success: true, ride: enrichedRide });
   } catch (error) {
@@ -464,12 +469,17 @@ const rejectRide = async (req, res) => {
 
     const sendRideEmail = async (rider, subject, htmlBody) => {
       const dashboardUrl = `${process.env.CLIENT_URL}/dashboard/rider/available-rides`;
-      await transporter.sendMail({
-        from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-        to: rider.email,
-        subject,
-        html: htmlBody.replace('{dashboardUrl}', dashboardUrl),
-      });
+      try {
+        await transporter.sendMail({
+          from: `"RideX Support" <${process.env.EMAIL_USER}>`,
+          to: rider.email,
+          subject,
+          html: htmlBody.replace('{dashboardUrl}', dashboardUrl),
+        });
+      } catch (emailError) {
+        console.error('Failed to send ride email:', emailError);
+        // Don't fail the request if email sending fails
+      }
     };
 
     // Recursive function: assign next rider and auto-handle rejection
@@ -621,13 +631,18 @@ const rideRequest = async (req, res) => {
     };
 
     const sendRideEmail = async (rider, subject, htmlBody) => {
-      const dashboardUrl = `http://localhost:3000/dashboard/rider/available-rides`;
-      await transporter.sendMail({
-        from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-        to: rider.email,
-        subject,
-        html: htmlBody.replace('{dashboardUrl}', dashboardUrl),
-      });
+      const dashboardUrl = `${process.env.CLIENT_URL}/dashboard/rider/available-rides`;
+      try {
+        await transporter.sendMail({
+          from: `"RideX Support" <${process.env.EMAIL_USER}>`,
+          to: rider.email,
+          subject,
+          html: htmlBody.replace('{dashboardUrl}', dashboardUrl),
+        });
+      } catch (emailError) {
+        console.error('Failed to send ride email:', emailError);
+        // Don't fail the request if email sending fails
+      }
     };
 
     //  Generate unique rideId immediately

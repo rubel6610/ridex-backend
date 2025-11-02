@@ -180,19 +180,24 @@ const forgotPassword = async (req, res) => {
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    await transporter.sendMail({
-      from: `"RideX Support" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Password Reset Request",
-      html: `
-        <h2>Password Reset</h2>
-        <p>Hello ${user.fullName || "User"},</p>
-        <p>You requested to reset your password. Click the link below to reset it:</p>
-        <a href="${resetLink}" target="_blank">${resetLink}</a>
-        <p>This link will expire in 10 minutes.</p>
-        <p>If you did not request this, ignore this email.</p>
-      `,
-    });
+    try {
+      await transporter.sendMail({
+        from: `"RideX Support" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Password Reset Request",
+        html: `
+          <h2>Password Reset</h2>
+          <p>Hello ${user.fullName || "User"},</p>
+          <p>You requested to reset your password. Click the link below to reset it:</p>
+          <a href="${resetLink}" target="_blank">${resetLink}</a>
+          <p>This link will expire in 10 minutes.</p>
+          <p>If you did not request this, ignore this email.</p>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
+      // Don't fail the request if email sending fails
+    }
 
     return res
       .status(200)

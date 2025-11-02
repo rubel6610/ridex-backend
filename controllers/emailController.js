@@ -24,24 +24,29 @@ const contactFormSubmit = async (req, res) => {
     }
 
     // Send email to admin/support
-    await transporter.sendMail({
-      from: `"RideX Contact Form" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER, // Send to admin email
-      subject: `Contact Form: ${subject}`,
-      html: `
-        <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
-        <p><strong>Subject:</strong> ${subject}</p>
-        <div>
-          <strong>Message:</strong>
-          <p>${message}</p>
-        </div>
-        <hr>
-        <p><em>Sent from RideX Contact Form</em></p>
-      `,
-    });
+    try {
+      await transporter.sendMail({
+        from: `"RideX Contact Form" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_USER, // Send to admin email
+        subject: `Contact Form: ${subject}`,
+        html: `
+          <h2>New Contact Form Submission</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+          <p><strong>Subject:</strong> ${subject}</p>
+          <div>
+            <strong>Message:</strong>
+            <p>${message}</p>
+          </div>
+          <hr>
+          <p><em>Sent from RideX Contact Form</em></p>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Failed to send contact form email:", emailError);
+      // Don't fail the request if email sending fails
+    }
 
     // Optional: Send confirmation to user
     try {
@@ -118,18 +123,23 @@ const subscribeToNewsletter = async (req, res) => {
     });
 
     // Send welcome email
-    await transporter.sendMail({
-      from: `"RideX Newsletter" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Welcome to RideX Newsletter!",
-      html: `
-        <h2>Welcome to RideX Newsletter!</h2>
-        <p>Thank you for subscribing to our newsletter!</p>
-        <p>You'll now receive updates about our latest news, blog posts, and special offers.</p>
-        <p>If you have any questions, feel free to contact us at any time.</p>
-        <p>Best regards,<br>The RideX Team</p>
-      `,
-    });
+    try {
+      await transporter.sendMail({
+        from: `"RideX Newsletter" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Welcome to RideX Newsletter!",
+        html: `
+          <h2>Welcome to RideX Newsletter!</h2>
+          <p>Thank you for subscribing to our newsletter!</p>
+          <p>You'll now receive updates about our latest news, blog posts, and special offers.</p>
+          <p>If you have any questions, feel free to contact us at any time.</p>
+          <p>Best regards,<br>The RideX Team</p>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Failed to send newsletter welcome email:", emailError);
+      // Don't fail the request if email sending fails
+    }
 
     return res.status(200).json({ 
       message: "Thank you for subscribing! You'll receive our latest updates." 

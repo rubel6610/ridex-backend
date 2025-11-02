@@ -13,7 +13,7 @@ const server = http.createServer(app);
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000','http://192.168.0.107:3000', 'http://localhost:3001', process.env.CLIENT_URL],
+  origin: [process.env.CLIENT_URL, 'http://localhost:3000','http://192.168.0.107:3000', 'http://localhost:3001'],
   credentials: true,
 }));
 
