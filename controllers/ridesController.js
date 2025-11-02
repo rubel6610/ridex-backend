@@ -463,7 +463,7 @@ const rejectRide = async (req, res) => {
     };
 
     const sendRideEmail = async (rider, subject, htmlBody) => {
-      const dashboardUrl = `http://localhost:3000/dashboard/rider/available-rides`;
+      const dashboardUrl = `${process.env.CLIENT_URL}/dashboard/rider/available-rides`;
       await transporter.sendMail({
         from: `"RideX Support" <${process.env.EMAIL_USER}>`,
         to: rider.email,
