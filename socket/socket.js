@@ -12,7 +12,9 @@ function initSocket(server) {
       credentials: true
     },
     allowEIO3: true,
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    pingInterval: 10000, // 10 seconds
+    pingTimeout: 5000,   // 5 seconds
   });
 
   io.on('connection', (socket) => {

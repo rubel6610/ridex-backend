@@ -378,10 +378,43 @@ const acceptRide = async (req, res) => {
     const io = getIO();
     console.log('Ride acceptance: Emitting to room:', `user_${ride.userId}`);
     console.log('Ride acceptance: User ID type:', typeof ride.userId, 'User ID value:', ride.userId);
+    
+    // Emit to user
     io.to(`user_${ride.userId}`).emit('ride_accepted', {
       rideId: rideId.toString(),
-      riderInfo: updatedRide.riderInfo
+      riderInfo: updatedRide.riderInfo,
+      rideDetails: {
+        pickup: ride.pickup,
+        drop: ride.drop,
+        fare: ride.fare,
+        vehicleType: ride.vehicleType,
+        status: 'accepted',
+        acceptedAt: new Date()
+      }
     });
+
+    // ✅ Emit event to rider to navigate to ongoing ride page
+    io.to(`rider_${riderId}`).emit('ride_accepted_by_rider', {
+      rideId: rideId.toString(),
+      rideDetails: {
+        userId: ride.userId,
+        pickup: ride.pickup,
+        drop: ride.drop,
+        fare: ride.fare,
+        vehicleType: ride.vehicleType,
+        status: 'accepted',
+        acceptedAt: new Date(),
+        userInfo: {
+          fullName: user.fullName || user.name || 'Unknown Passenger',
+          email: user.email || '',
+          phone: user.phone || '',
+          rating: user.rating || 0,
+          photoUrl: user.photoUrl || null
+        }
+      }
+    });
+    
+    console.log('Ride acceptance: Events emitted at:', new Date());
 
     // Send email to user
     try {
@@ -874,23 +907,40 @@ const startRide = async (req, res) => {
         } 
       }
     );
+    
+    console.log('Ride started: Updated database at:', new Date());
 
     // Notify both user and rider via Socket.IO
     const io = getIO();
     io.to(`user_${ride.userId}`).emit('ride_started', {
       rideId: rideId.toString(),
       status: 'ongoing',
-      startedAt: new Date()
+      startedAt: new Date(),
+      rideDetails: {
+        pickup: ride.pickup,
+        drop: ride.drop,
+        fare: ride.fare,
+        vehicleType: ride.vehicleType
+      }
     });
     
     if (ride.riderId) {
       io.to(`rider_${ride.riderId.toString()}`).emit('ride_started', {
         rideId: rideId.toString(),
         status: 'ongoing',
-        startedAt: new Date()
+        startedAt: new Date(),
+        rideDetails: {
+          userId: ride.userId,
+          pickup: ride.pickup,
+          drop: ride.drop,
+          fare: ride.fare,
+          vehicleType: ride.vehicleType,
+          userInfo: ride.userInfo
+        }
       });
     }
-
+    
+    console.log('Ride started: Events emitted at:', new Date());
     return res.json({ 
       success: true, 
       message: 'Ride started successfully',
